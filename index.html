@@ -3,63 +3,44 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>モツーズ・パクパクパレード</title>
+    <title>モツーズ・デバッグ版</title>
     <style>
-        body { 
-            background: #333; margin: 0; padding: 0;
-            display: flex; flex-direction: column; align-items: center; 
-            font-family: 'Arial', sans-serif; overflow: hidden; touch-action: none;
-        }
-
-        /* ゲーム画面（空の色） */
-        #game-screen { 
-            position: relative; width: 360px; height: 500px; 
-            background: skyblue; border: 4px solid #fff; border-radius: 10px;
-            margin-top: 20px; overflow: hidden;
-        }
+        body { background: #333; margin: 0; padding: 0; display: flex; flex-direction: column; align-items: center; overflow: hidden; touch-action: none; }
+        #game-screen { position: relative; width: 360px; height: 500px; background: skyblue; border: 4px solid #fff; margin-top: 20px; overflow: hidden; }
         
-        /* プレイヤー（一本歯の彼） */
+        /* プレイヤー */
         #player {
             position: absolute; bottom: 10px; width: 70px; height: 70px;
-            background-image: url('images/player.png'); /* 保存した画像名に */
             background-size: contain; background-repeat: no-repeat; background-position: center;
             z-index: 10; transition: left 0.1s ease-out;
-            /* 画像がない時の目印 */
-            background-color: rgba(255,255,255,0.2); border-radius: 50%;
+            /* デバッグ用：画像がない時に形を見せる */
+            border: 2px solid yellow; 
         }
 
-        /* 落ちてくるモツたち */
+        /* 落ちてくるモツ */
         .motsu {
             position: absolute; width: 60px; height: 60px;
-            background-size: contain; background-repeat: no-repeat;
+            background-size: contain; background-repeat: no-repeat; background-position: center;
             z-index: 5;
+            /* デバッグ用：画像がない時に枠を見せる */
+            border: 1px dashed white;
         }
 
-        #score-board {
-            position: absolute; top: 10px; width: 100%; text-align: center;
-            font-size: 24px; color: white; font-weight: bold; text-shadow: 2px 2px #000;
-        }
-
-        /* 操作ボタン */
+        #score-board { position: absolute; top: 10px; width: 100%; text-align: center; font-size: 24px; color: white; font-weight: bold; text-shadow: 2px 2px #000; z-index: 20; }
         #controls { display: flex; gap: 30px; margin-top: 20px; }
-        .btn { 
-            width: 120px; height: 80px; font-size: 40px; color: white;
-            background: #ff9900; border: none; border-bottom: 6px solid #cc7700;
-            border-radius: 20px; cursor: pointer;
-        }
-        .btn:active { transform: translateY(4px); border-bottom: 2px solid #cc7700; }
+        .btn { width: 120px; height: 80px; font-size: 40px; color: white; background: #ff9900; border: none; border-bottom: 6px solid #cc7700; border-radius: 20px; }
     </style>
 </head>
 <body>
 
     <div id="game-screen">
         <div id="score-board">スコア: 0</div>
-        <div id="player"></div>
+        <div id="player" style="background-image: url('./images/player.png');"></div>
     </div>
 
     <div id="controls">
-        <button class="btn" id="left-btn">◀</button>
-        <button class="btn" id="right-btn">▶</button>
+        <button class="btn" onclick="moveLeft()">◀</button>
+        <button class="btn" onclick="moveRight()">▶</button>
     </div>
 
     <script>
@@ -68,19 +49,18 @@
         const scoreDisplay = document.getElementById('score-board');
         
         let score = 0;
-        let playerLine = 2; // 真ん中の列からスタート
+        let playerLine = 2;
         const totalLines = 5;
-        const screenWidth = 360;
-        const lineWidth = screenWidth / totalLines;
+        const lineWidth = 360 / totalLines;
 
-        // モツの設定（画像ファイル名は保存したものに合わせてね）
+        // 【重要】ファイル名はすべて「小文字」で、前に「./」を付けています
         const motsuTypes = [
-            { name: 'シロ', img: 'images/shiro.png' },
-            { name: 'ハツ', img: 'images/hatsu.png' },
-            { name: 'レバー', img: 'images/lever.png' },
-            { name: 'ガツ', img: 'images/gatsu.png' },
-            { name: 'アブラ', img: 'images/abura.png' },
-            { name: 'ナンコツ', img: 'images/nankotsu.png' }
+            { img: './images/shiro.png' },
+            { img: './images/hatsu.png' },
+            { img: './images/lever.png' },
+            { img: './images/gatsu.png' },
+            { img: './images/abura.png' },
+            { img: './images/nankotsu.png' }
         ];
 
         function updatePlayerPos() {
@@ -88,9 +68,8 @@
         }
         updatePlayerPos();
 
-        // ボタン操作
-        document.getElementById('left-btn').onclick = () => { if(playerLine > 0) playerLine--; updatePlayerPos(); };
-        document.getElementById('right-btn').onclick = () => { if(playerLine < totalLines - 1) playerLine++; updatePlayerPos(); };
+        window.moveLeft = () => { if(playerLine > 0) playerLine--; updatePlayerPos(); };
+        window.moveRight = () => { if(playerLine < totalLines - 1) playerLine++; updatePlayerPos(); };
 
         function spawnMotsu() {
             const motsu = document.createElement('div');
@@ -98,37 +77,29 @@
             const line = Math.floor(Math.random() * totalLines);
             
             motsu.className = 'motsu';
+            // ここで背景画像を設定
             motsu.style.backgroundImage = `url('${type.img}')`;
             motsu.style.left = (line * lineWidth + (lineWidth - 60)/2) + 'px';
             motsu.style.top = '-70px';
             screen.appendChild(motsu);
 
             let top = -70;
-            const speed = 1.5 + Math.random() * 1.0; // ゆっくりランダム
-
             function fall() {
-                top += speed;
+                top += 2;
                 motsu.style.top = top + 'px';
 
-                // キャッチ判定（少し判定を広げて「かわいそう」にならないように）
                 if (top > 380 && top < 450 && line === playerLine) {
                     score += 10;
                     scoreDisplay.innerText = "スコア: " + score;
                     motsu.remove();
                     return;
                 }
-
-                if (top > 500) {
-                    motsu.remove();
-                    return;
-                }
+                if (top > 500) { motsu.remove(); return; }
                 requestAnimationFrame(fall);
             }
             requestAnimationFrame(fall);
         }
-
-        // 1.8秒ごとに降ってくる
-        setInterval(spawnMotsu, 1800);
+        setInterval(spawnMotsu, 2000);
     </script>
 </body>
 </html>
