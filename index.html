@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>アキエクライシス - 宴開始版</title>
+    <title>アキエクライシス - Performance Optimized</title>
     <style>
         body { background: #1a0000; margin: 0; padding: 0; display: flex; flex-direction: column; align-items: center; overflow: hidden; touch-action: none; font-family: 'Hiragino Kaku Gothic ProN', sans-serif; }
         #game-screen { 
@@ -14,7 +14,6 @@
         }
         #damage-flash { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: red; opacity: 0; pointer-events: none; z-index: 50; transition: opacity 0.1s; }
         
-        /* タイトルを一行に強制 */
         .crisis-title { 
             font-size: 38px; font-weight: 900; color: #fff; 
             text-shadow: 0 0 10px #ff0000, 3px 3px 0 #880000; 
@@ -22,8 +21,8 @@
             white-space: nowrap; width: 100%;
         }
 
-        #player { position: absolute; bottom: 10px; width: 70px; height: 70px; background-size: contain; background-repeat: no-repeat; background-position: center; z-index: 10; transition: left 0.1s ease-out; }
-        .motsu { position: absolute; width: 60px; height: 60px; background-size: contain; background-repeat: no-repeat; background-position: center; z-index: 5; animation: puripuri 1s infinite; }
+        #player { position: absolute; bottom: 10px; width: 70px; height: 70px; background-size: contain; background-repeat: no-repeat; background-position: center; z-index: 10; transition: left 0.1s ease-out; will-change: left; }
+        .motsu { position: absolute; width: 60px; height: 60px; background-size: contain; background-repeat: no-repeat; background-position: center; z-index: 5; animation: puripuri 1s infinite; will-change: top; }
         .item-umewari { filter: drop-shadow(0 0 12px #ff00ff) brightness(1.2); z-index: 6 !important; }
         
         @keyframes puripuri { 0%, 49% { transform: scaleX(1); } 50%, 100% { transform: scaleX(-1); } }
@@ -34,7 +33,6 @@
         .overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); color: white; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 100; padding: 10px; box-sizing: border-box; }
         .instruction { font-size: 12px; color: #ccc; margin: 3px 0; text-align: center; line-height: 1.4; }
         
-        /* 得点モツと危険モツの表示エリア */
         .motsu-info-container { display: flex; flex-direction: column; gap: 8px; margin: 10px 0; width: 100%; align-items: center; }
         .motsu-row { display: flex; gap: 8px; background: rgba(255,255,255,0.1); padding: 5px 10px; border-radius: 5px; align-items: center; }
         .motsu-row.danger { background: rgba(255,0,0,0.2); border: 1px solid #ff4444; }
@@ -57,7 +55,6 @@
         <div id="damage-flash"></div>
         <div id="title-screen" class="overlay">
             <div class="crisis-title">アキエクライシス</div>
-            
             <p class="instruction">
                 10個食べれば体力1回復！<br>
                 14個ごとに「梅割り」出現のチャンス！<br>
@@ -68,18 +65,18 @@
                 <div class="motsu-row">
                     <div class="motsu-label" style="color: #00ff00;">得点モツ</div>
                     <div class="motsu-list">
-                        <div class="mini-img" style="background-image: url('./images/shiro.png');" title="シロ"></div>
-                        <div class="mini-img" style="background-image: url('./images/hatsu.png');" title="ハツ"></div>
-                        <div class="mini-img" style="background-image: url('./images/lever.png');" title="レバー"></div>
-                        <div class="mini-img" style="background-image: url('./images/abura.png');" title="アブラ"></div>
-                        <div class="mini-img" style="background-image: url('./images/kasira.png');" title="カシラ"></div>
+                        <div class="mini-img" style="background-image: url('./images/shiro.png');"></div>
+                        <div class="mini-img" style="background-image: url('./images/hatsu.png');"></div>
+                        <div class="mini-img" style="background-image: url('./images/lever.png');"></div>
+                        <div class="mini-img" style="background-image: url('./images/abura.png');"></div>
+                        <div class="mini-img" style="background-image: url('./images/kasira.png');"></div>
                     </div>
                 </div>
                 <div class="motsu-row danger">
                     <div class="motsu-label" style="color: #ff4444;">おなか壊す</div>
                     <div class="motsu-list">
-                        <div class="mini-img" style="background-image: url('./images/gatsu.png');" title="ガツ"></div>
-                        <div class="mini-img" style="background-image: url('./images/nankotsu.png');" title="ナンコツ"></div>
+                        <div class="mini-img" style="background-image: url('./images/gatsu.png');"></div>
+                        <div class="mini-img" style="background-image: url('./images/nankotsu.png');"></div>
                     </div>
                 </div>
             </div>
@@ -106,7 +103,6 @@
     </div>
 
     <script>
-        // --- 以前のスクリプト部分は変更なし ---
         const screen = document.getElementById('game-screen');
         const flash = document.getElementById('damage-flash');
         const player = document.getElementById('player');
@@ -127,18 +123,12 @@
         sndSiren.loop = true;
 
         let score, hp, combo, playerLine, isGameRunning = false, spawnInterval;
-        let lastLine = -1;
-        let baseFallSpeed = 1.3;
-        let autoHealCounter = 0;   
-        let umewariLotteryCounter = 0; 
-        let currentPlayerImgIdx = 1; 
+        let lastLine = -1, baseFallSpeed = 1.3;
+        let autoHealCounter = 0, umewariLotteryCounter = 0, currentPlayerImgIdx = 1; 
         
-        const AUTO_HEAL_TRIGGER = 10;
-        const UMEWARI_LOTTERY_TRIGGER = 14;
-        const UMEWARI_PROBABILITY = 0.25;
+        const AUTO_HEAL_TRIGGER = 10, UMEWARI_LOTTERY_TRIGGER = 14, UMEWARI_PROBABILITY = 0.25;
+        const totalLines = 5, lineWidth = 360 / totalLines;
 
-        const totalLines = 5;
-        const lineWidth = 360 / totalLines;
         const motsuTypes = [
             { name: 'シロ', img: './images/shiro.png', type: 'score' },
             { name: 'ハツ', img: './images/hatsu.png', type: 'score' },
@@ -158,6 +148,9 @@
         }
 
         function startGame() {
+            if (isGameRunning) return;
+            clearInterval(spawnInterval); // 念のためクリア
+            
             [sndBgm, sndMove, sndDamage, sndSiren, sndHeal].forEach(s => { 
                 s.play().then(() => { s.pause(); s.currentTime = 0; }).catch(() => {}); 
             });
@@ -172,7 +165,7 @@
             
             sndBgm.currentTime = 0;
             sndBgm.playbackRate = 1.0;
-            sndBgm.play().catch(e => console.log(e));
+            sndBgm.play().catch(() => {});
 
             updateUI();
             updatePlayerPos(false);
@@ -189,11 +182,17 @@
             if (!isGameRunning) return;
             isGameRunning = false;
             clearInterval(spawnInterval);
+            
             sndBgm.pause();
             sndSiren.pause();
             sndDamage.play();
+            
             player.classList.add('shivering');
             triggerFlash("red", 600);
+
+            // 残っているモツを消去
+            document.querySelectorAll('.motsu').forEach(m => m.remove());
+
             setTimeout(() => {
                 saveScore(score);
                 updateRankingDisplay();
@@ -257,12 +256,8 @@
 
             if (umewariLotteryCounter >= UMEWARI_LOTTERY_TRIGGER) {
                 umewariLotteryCounter = 0;
-                if (Math.random() < UMEWARI_PROBABILITY) {
-                    data = itemUmewari;
-                    motsu.classList.add('item-umewari');
-                } else {
-                    data = motsuTypes[Math.floor(Math.random() * motsuTypes.length)];
-                }
+                data = (Math.random() < UMEWARI_PROBABILITY) ? itemUmewari : motsuTypes[Math.floor(Math.random() * motsuTypes.length)];
+                if (data.type === 'item') motsu.classList.add('item-umewari');
             } else {
                 data = motsuTypes[Math.floor(Math.random() * motsuTypes.length)];
             }
@@ -283,37 +278,47 @@
                 if (!isGameRunning) { motsu.remove(); return; }
                 top += baseFallSpeed;
                 motsu.style.top = top + 'px';
+                
+                // 判定
                 if (top > 380 && top < 450 && line === playerLine) {
-                    if (data.type === 'damage') {
-                        hp--; combo = 0; 
-                        sndDamage.currentTime = 0; sndDamage.play().catch(() => {});
-                        triggerFlash("red", 150);
-                        if (hp <= 0) gameOver();
-                    } else if (data.type === 'item') {
-                        if (hp < 3) hp++;
-                        sndHeal.play().catch(() => {});
-                        triggerFlash("white", 200);
-                    } else {
-                        combo++; score += 10;
-                        autoHealCounter++;
-                        umewariLotteryCounter++;
-                        if (autoHealCounter >= AUTO_HEAL_TRIGGER) {
-                            autoHealCounter = 0;
-                            if (hp < 3) {
-                                hp++;
-                                sndHeal.play().catch(() => {});
-                                triggerFlash("white", 200);
-                            }
-                        }
-                    }
-                    updateUI();
+                    handleCollision(data);
                     motsu.remove();
                     return;
                 }
-                if (top > 500) { motsu.remove(); return; }
+                
+                if (top > 500) {
+                    motsu.remove();
+                    return;
+                }
                 requestAnimationFrame(fall);
             }
             requestAnimationFrame(fall);
+        }
+
+        function handleCollision(data) {
+            if (data.type === 'damage') {
+                hp--; combo = 0; 
+                sndDamage.currentTime = 0; sndDamage.play().catch(() => {});
+                triggerFlash("red", 150);
+                if (hp <= 0) gameOver();
+            } else if (data.type === 'item') {
+                if (hp < 3) hp++;
+                sndHeal.play().catch(() => {});
+                triggerFlash("white", 200);
+            } else {
+                combo++; score += 10;
+                autoHealCounter++;
+                umewariLotteryCounter++;
+                if (autoHealCounter >= AUTO_HEAL_TRIGGER) {
+                    autoHealCounter = 0;
+                    if (hp < 3) {
+                        hp++;
+                        sndHeal.play().catch(() => {});
+                        triggerFlash("white", 200);
+                    }
+                }
+            }
+            updateUI();
         }
     </script>
 </body>
