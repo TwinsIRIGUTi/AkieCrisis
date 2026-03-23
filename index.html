@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>アキエクライシス - 宴の心得</title>
+    <title>アキエクライシス - 伝票リザルト版</title>
     <style>
         body { 
-            background: #1a0000; margin: 0; padding: 0; display: flex; flex-direction: column; align-items: center; overflow: hidden; touch-action: none; font-family: sans-serif;
+            background: #1a0000; margin: 0; padding: 0; display: flex; flex-direction: column; align-items: center; overflow: hidden; touch-action: none; font-family: 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif;
             -webkit-user-select: none; user-select: none;
         }
         #game-screen { 
@@ -32,8 +32,22 @@
         .shivering { animation: shiver 0.1s infinite !important; }
 
         .overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.92); color: white; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 100; padding: 20px; box-sizing: border-box; }
-        #how-to-play-screen { display: none; text-align: left; }
-        .how-to-content { font-size: 14px; line-height: 1.6; color: #eee; width: 100%; }
+        
+        /* 伝票風スタイル */
+        .denpyo {
+            background: #fdfdf5; color: #333; padding: 15px; width: 240px; 
+            box-shadow: 5px 5px 15px rgba(0,0,0,0.5); font-family: monospace;
+            border-top: 4px dotted #ccc; border-bottom: 4px dotted #ccc;
+            margin-bottom: 15px; transform: rotate(1deg);
+        }
+        .denpyo h2 { text-align: center; margin: 0 0 10px 0; border-bottom: 2px solid #333; font-size: 20px; }
+        .denpyo-row { display: flex; justify-content: space-between; font-size: 14px; margin: 4px 0; }
+        .total-row { font-size: 22px; font-weight: bold; border-top: 2px solid #333; margin-top: 10px; padding-top: 5px; display: flex; justify-content: space-between; }
+        .shogo-stamp { 
+            color: rgba(200, 0, 0, 0.7); border: 3px double rgba(200, 0, 0, 0.7); 
+            padding: 5px; transform: rotate(-12deg); font-weight: bold; 
+            margin-top: 15px; text-align: center; font-size: 20px;
+        }
 
         .action-btn { 
             padding: 12px 20px; font-size: 24px; color: white; border: none; border-radius: 10px; cursor: pointer; font-weight: bold; background: #aa0000; border-bottom: 5px solid #660000;
@@ -59,34 +73,36 @@
         <div id="damage-flash"></div>
 
         <div id="title-screen" class="overlay">
-            <div class="crisis-title">アキエクライシス</div>
-            <div style="margin: 10px 0; text-align: center;">
-                <p style="color: #00ff00; font-weight: bold; margin: 5px 0;">【好きなモツ】 食べると得点！</p>
-                <div style="display:flex; gap:5px; justify-content: center; margin-bottom: 15px;">
-                    <img src="./images/shiro.png" width="30" height="30"> <img src="./images/hatsu.png" width="30" height="30">
-                    <img src="./images/lever.png" width="30" height="30"> <img src="./images/abura.png" width="30" height="30">
-                    <img src="./images/kasira.png" width="30" height="30">
+            <div id="title-content">
+                <div class="crisis-title">アキエクライシス</div>
+                <div style="margin: 10px 0; text-align: center;">
+                    <p style="color: #00ff00; font-weight: bold; margin: 5px 0;">【好きなモツ】 得点！</p>
+                    <div style="display:flex; gap:5px; justify-content: center; margin-bottom: 10px;">
+                        <img src="./images/shiro.png" width="30" height="30"> <img src="./images/hatsu.png" width="30" height="30">
+                        <img src="./images/lever.png" width="30" height="30"> <img src="./images/abura.png" width="30" height="30">
+                        <img src="./images/kasira.png" width="30" height="30">
+                    </div>
+                    <p style="color: #ff4444; font-weight: bold; margin: 5px 0;">【苦手なモツ】 ダメージ！</p>
+                    <div style="display:flex; gap:10px; justify-content: center;">
+                        <img src="./images/gatsu.png" width="35" height="35"> <img src="./images/nankotsu.png" width="35" height="35">
+                    </div>
                 </div>
-                <p style="color: #ff4444; font-weight: bold; margin: 5px 0;">【苦手なモツ】 当たるとダメージ！</p>
-                <div style="display:flex; gap:10px; justify-content: center;">
-                    <img src="./images/gatsu.png" width="35" height="35"> <img src="./images/nankotsu.png" width="35" height="35">
-                </div>
+                <button class="action-btn" onclick="startGame()">宴開始</button>
+                <button class="action-btn secondary-btn" onclick="showHowTo()">遊び方</button>
             </div>
             
-            <div id="result-area"></div>
-            <button class="action-btn" onclick="startGame()">宴開始</button>
-            <button class="action-btn secondary-btn" onclick="showHowTo()">遊び方</button>
-            <button id="return-btn-id" class="action-btn secondary-btn" style="display:none;" onclick="resetMenu()">タイトルへ</button>
+            <div id="result-area" style="display:none;"></div>
+            <button id="return-btn-id" class="action-btn" style="display:none;" onclick="resetMenu()">おあいそ（戻る）</button>
         </div>
 
-        <div id="how-to-play-screen" class="overlay">
+        <div id="how-to-play-screen" class="overlay" style="display:none;">
             <h2 style="color: #ffcc00; margin-top: 0;">宴のルール</h2>
-            <div class="how-to-content">
+            <div style="font-size: 14px; line-height: 1.6; color: #eee; width: 100%;">
                 <p>● 左右のボタンで移動してモツを食べよう！</p>
-                <p>● 好きなモツを食べ続けると<span style="color:#00ff00;">体力回復</span>！</p>
-                <p>● 14個食べると<span style="color:#ff00ff;">梅割り</span>が降ってくるぞ！</p>
-                <p>● 体力満タンで梅割りを飲むと<span style="color:#ffcc00;">＋100点ボーナス</span>！</p>
-                <p>● 1000点を超えると、苦手なモツが<span style="color:red; font-weight:bold;">3倍速</span>で突っ込んでくる（最大80%の確率）！</p>
+                <p>● 10個食べると<span style="color:#00ff00;">体力回復</span>！</p>
+                <p>● 14個で<span style="color:#ff00ff;">梅割り</span>抽選！</p>
+                <p>● 体力満タンで飲むと<span style="color:#ffcc00;">＋100点ボーナス</span>！</p>
+                <p>● 1000点超えで苦手なモツが<span style="color:red; font-weight:bold;">3倍速</span>（最大80%）！</p>
             </div>
             <button class="action-btn" style="width:150px;" onclick="hideHowTo()">閉じる</button>
         </div>
@@ -99,7 +115,8 @@
 
     <script>
         const screen = document.getElementById('game-screen'), flash = document.getElementById('damage-flash'), player = document.getElementById('player');
-        const titleScreen = document.getElementById('title-screen'), howToScreen = document.getElementById('how-to-play-screen');
+        const titleScreen = document.getElementById('title-screen'), titleContent = document.getElementById('title-content'), howToScreen = document.getElementById('how-to-play-screen');
+        const resultArea = document.getElementById('result-area'), returnBtn = document.getElementById('return-btn-id');
         const scoreDisplay = document.getElementById('score-board'), hpDisplay = document.getElementById('hp-display'), comboDisplay = document.getElementById('combo-display');
         const bgDangerLayer = document.getElementById('bg-danger');
         
@@ -118,6 +135,14 @@
 
         function showHowTo() { howToScreen.style.display = 'flex'; }
         function hideHowTo() { howToScreen.style.display = 'none'; }
+
+        function getShogo(s) {
+            if (s < 300) return "いちげんさん";
+            if (s < 500) return "御新規さん";
+            if (s < 1000) return "お客さん";
+            if (s < 3001) return "おなじみさん";
+            return "常連さん";
+        }
 
         async function startGame() {
             if (isGameRunning) return;
@@ -155,22 +180,35 @@
             isGameRunning = false; clearInterval(spawnInterval); clearInterval(bgInterval); clearInterval(charInterval);
             sounds.bgm.pause(); sounds.siren.pause(); sounds.damage.play();
             player.classList.add('shivering');
-            flash.style.opacity = "0.7"; setTimeout(() => flash.style.opacity = "0", 600);
-            document.querySelectorAll('.motsu').forEach(m => m.remove());
+            flash.style.opacity = "0.7"; setTimeout(() => flash.style.opacity = "0", 150);
+            
+            const shogo = getShogo(score);
+            
             setTimeout(() => {
+                document.querySelectorAll('.motsu').forEach(m => m.remove());
                 titleScreen.style.display = 'flex';
-                document.getElementById('result-area').innerHTML = `<h2 style="color:red;margin:5px;">おなかをこわした！！</h2><p style="font-size:24px; color:#ffcc00;">記録: ${score}点</p>`;
-                document.querySelector('.action-btn').style.display = 'none'; // 開始ボタン隠す
-                document.querySelector('.secondary-btn').style.display = 'none'; // 遊び方ボタン隠す
-                document.getElementById('return-btn-id').style.display = 'block';
+                titleContent.style.display = 'none';
+                
+                resultArea.innerHTML = `
+                    <div class="denpyo">
+                        <h2>御計算書</h2>
+                        <div class="denpyo-row"><span>好きなモツ</span><span>込</span></div>
+                        <div class="denpyo-row"><span>梅割り（酒）</span><span>込</span></div>
+                        <div class="denpyo-row"><span>席料（お通し）</span><span>0</span></div>
+                        <div class="total-row"><span>合計</span><span>${score} 点</span></div>
+                        <div class="shogo-stamp">${shogo}</div>
+                    </div>
+                `;
+                resultArea.style.display = 'block';
+                returnBtn.style.display = 'block';
             }, 600);
         }
 
         function resetMenu() {
-            document.getElementById('result-area').innerHTML = "";
-            document.querySelector('.action-btn').style.display = 'block';
-            document.querySelector('.secondary-btn').style.display = 'block';
-            document.getElementById('return-btn-id').style.display = 'none';
+            resultArea.style.display = 'none';
+            returnBtn.style.display = 'none';
+            titleContent.style.display = 'block';
+            player.classList.remove('shivering');
         }
 
         function updateUI() {
