@@ -3,50 +3,33 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>アキエクライシス</title>
+    <title>アキエクライシス - 梅割り回復版</title>
     <style>
         body { background: #1a0000; margin: 0; padding: 0; display: flex; flex-direction: column; align-items: center; overflow: hidden; touch-action: none; font-family: 'Hiragino Kaku Gothic ProN', sans-serif; }
-        
         #game-screen { 
             position: relative; width: 360px; height: 500px; 
             background-color: #222; background-image: url('./images/background.png'); 
             background-size: cover; background-position: center;
             border: 4px solid #440000; margin-top: 10px; overflow: hidden; border-radius: 10px; 
         }
-
-        /* 赤い閃光用 */
-        #damage-flash { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: red; opacity: 0; pointer-events: none; z-index: 50; }
-
-        /* タイトルデザイン（アキエクライシス） */
-        .crisis-title {
-            font-size: 42px; font-weight: 900; color: #fff;
-            text-shadow: 0 0 10px #ff0000, 3px 3px 0 #880000;
-            letter-spacing: 2px; margin: 10px 0; font-style: italic;
-        }
-
+        #damage-flash { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: red; opacity: 0; pointer-events: none; z-index: 50; transition: opacity 0.1s; }
+        .crisis-title { font-size: 42px; font-weight: 900; color: #fff; text-shadow: 0 0 10px #ff0000, 3px 3px 0 #880000; letter-spacing: 2px; margin: 10px 0; font-style: italic; text-align: center; }
         #player { position: absolute; bottom: 10px; width: 70px; height: 70px; background-size: contain; background-repeat: no-repeat; background-position: center; z-index: 10; transition: left 0.1s ease-out; }
         .motsu { position: absolute; width: 60px; height: 60px; background-size: contain; background-repeat: no-repeat; background-position: center; z-index: 5; animation: puripuri 1s infinite; }
-        
+        .item-umewari { filter: drop-shadow(0 0 12px #ff00ff) brightness(1.2); z-index: 6 !important; }
         @keyframes puripuri { 0%, 49% { transform: scaleX(1); } 50%, 100% { transform: scaleX(-1); } }
         @keyframes shiver { 0% { transform: translate(0, 0); } 25% { transform: translate(2px, -2px); } 50% { transform: translate(-2px, 2px); } 75% { transform: translate(2px, 2px); } 100% { transform: translate(0, 0); } }
         .shivering { animation: shiver 0.1s infinite !important; }
-
         #ui-layer { position: absolute; top: 10px; width: 100%; display: flex; justify-content: space-around; color: white; font-weight: bold; text-shadow: 2px 2px #000; z-index: 20; pointer-events: none; }
-        
-        /* タイトル・説明画面 */
         .overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); color: white; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 100; padding: 10px; box-sizing: border-box; }
-        .instruction { font-size: 13px; color: #ccc; margin: 5px 0; text-align: center; line-height: 1.4; }
-        
-        /* 敵キャラ紹介 */
+        .instruction { font-size: 13px; color: #ccc; margin: 5px 0; text-align: center; line-height: 1.6; }
         .enemy-box { display: flex; gap: 15px; background: rgba(255,0,0,0.2); padding: 10px; border-radius: 8px; border: 1px solid #ff4444; margin: 10px 0; }
         .enemy-item { text-align: center; font-size: 11px; }
         .enemy-img { width: 40px; height: 40px; background-size: contain; background-repeat: no-repeat; margin-bottom: 5px; }
-
         .ranking-list { list-style: none; padding: 0; text-align: center; color: #ffcc00; font-size: 16px; margin: 5px 0; }
         .action-btn { padding: 12px 30px; font-size: 22px; color: white; border: none; border-radius: 10px; cursor: pointer; font-weight: bold; }
         .start-btn { background: #aa0000; border-bottom: 5px solid #660000; }
         .return-btn { background: #444; display: none; }
-
         #controls { display: flex; gap: 30px; margin-top: 15px; }
         .btn { width: 120px; height: 80px; font-size: 40px; color: white; background: #880000; border: none; border-bottom: 6px solid #440000; border-radius: 20px; }
     </style>
@@ -55,12 +38,12 @@
 
     <div id="game-screen">
         <div id="damage-flash"></div>
-        
         <div id="title-screen" class="overlay">
             <div class="crisis-title">アキエクライシス</div>
-            
-            <p class="instruction">モツを食べて生き残れ！<br>ただし、おなかをこわすアイツらに注意...</p>
-
+            <p class="instruction">
+                10個食べると「梅割り」出現のチャンス！<br>
+                <span style="color: #ff00ff; font-weight: bold; font-size: 16px;">梅割り呑んで回復だ！！</span>
+            </p>
             <div class="enemy-box">
                 <div class="enemy-item">
                     <div class="enemy-img" style="background-image: url('./images/gatsu.png');"></div>
@@ -72,15 +55,12 @@
                 </div>
                 <div style="font-size: 14px; color: #ff4444; align-self: center; font-weight: bold;">危険！<br>おなかこわす</div>
             </div>
-
             <div id="result-area"></div>
             <p id="ranking-title">🏆 ハイスコア 🏆</p>
             <ul id="ranking-display" class="ranking-list"></ul>
-            
             <button id="start-btn-id" class="action-btn start-btn" onclick="startGame()">サバイバル開始</button>
             <button id="return-btn-id" class="action-btn return-btn" onclick="resetMenu()">タイトルへ戻る</button>
         </div>
-
         <div id="ui-layer">
             <div id="hp-display">体力: ❤️❤️❤️</div>
             <div id="score-board">0点</div>
@@ -113,10 +93,14 @@
 
         let score, hp, combo, playerLine, isGameRunning = false, spawnInterval;
         let lastLine = -1;
-        let baseFallSpeed = 1.3; // 初期の落下速度
+        let baseFallSpeed = 1.3;
+        let motsuEatenCount = 0; 
+        
+        const UMEWARI_COUNT_TRIGGER = 10;
+        const UMEWARI_PROBABILITY = 0.25;
+
         const totalLines = 5;
         const lineWidth = 360 / totalLines;
-
         const motsuTypes = [
             { name: 'シロ', img: './images/shiro.png', type: 'score' },
             { name: 'ハツ', img: './images/hatsu.png', type: 'score' },
@@ -126,6 +110,7 @@
             { name: 'ガツ', img: './images/gatsu.png', type: 'damage' },
             { name: 'ナンコツ', img: './images/nankotsu.png', type: 'damage' }
         ];
+        const itemUmewari = { name: '梅割り', img: './images/umewari.png', type: 'item' };
 
         window.onload = updateRankingDisplay;
 
@@ -136,7 +121,7 @@
 
         function startGame() {
             [sndMove, sndDamage, sndSiren, sndHeal].forEach(s => { s.play().then(() => { s.pause(); s.currentTime = 0; }).catch(() => {}); });
-            score = 0; hp = 3; combo = 0; playerLine = 2; baseFallSpeed = 1.3;
+            score = 0; hp = 3; combo = 0; playerLine = 2; baseFallSpeed = 1.3; motsuEatenCount = 0;
             isGameRunning = true;
             titleScreen.style.display = 'none';
             player.classList.remove('shivering');
@@ -160,7 +145,6 @@
             sndDamage.play();
             player.classList.add('shivering');
             triggerFlash("red", 600);
-            
             setTimeout(() => {
                 saveScore(score);
                 updateRankingDisplay();
@@ -169,7 +153,7 @@
                 startBtn.style.display = 'none';
                 returnBtn.style.display = 'block';
                 document.querySelector('.enemy-box').style.display = 'none';
-                document.querySelector('.instruction').style.display = 'none';
+                document.querySelectorAll('.instruction').forEach(el => el.style.display = 'none');
                 document.getElementById('ranking-title').style.display = 'none';
                 document.getElementById('ranking-display').style.display = 'none';
             }, 600);
@@ -187,7 +171,7 @@
             startBtn.style.display = 'block';
             returnBtn.style.display = 'none';
             document.querySelector('.enemy-box').style.display = 'flex';
-            document.querySelector('.instruction').style.display = 'block';
+            document.querySelectorAll('.instruction').forEach(el => el.style.display = 'block');
             document.getElementById('ranking-title').style.display = 'block';
             document.getElementById('ranking-display').style.display = 'block';
             updateRankingDisplay();
@@ -216,14 +200,25 @@
             lastLine = line;
 
             const motsu = document.createElement('div');
-            const data = motsuTypes[Math.floor(Math.random() * motsuTypes.length)];
-            motsu.className = 'motsu';
+            let data;
+            if (motsuEatenCount >= UMEWARI_COUNT_TRIGGER) {
+                motsuEatenCount = 0; 
+                if (Math.random() < UMEWARI_PROBABILITY) {
+                    data = itemUmewari;
+                    motsu.classList.add('item-umewari');
+                } else {
+                    data = motsuTypes[Math.floor(Math.random() * motsuTypes.length)];
+                }
+            } else {
+                data = motsuTypes[Math.floor(Math.random() * motsuTypes.length)];
+            }
+
+            motsu.className += ' motsu';
             motsu.style.backgroundImage = `url('${data.img}')`;
             motsu.style.left = (line * lineWidth + (lineWidth - 60)/2) + 'px';
             motsu.style.top = '-70px';
             screen.appendChild(motsu);
 
-            // 【難易度上昇】1つ降るごとに少しずつ速くなる
             baseFallSpeed += 0.005;
 
             let top = -70;
@@ -237,11 +232,13 @@
                         sndDamage.currentTime = 0; sndDamage.play().catch(() => {});
                         triggerFlash("red", 150);
                         if (hp <= 0) gameOver();
+                    } else if (data.type === 'item') {
+                        if (hp < 3) hp++;
+                        sndHeal.play().catch(() => {});
+                        triggerFlash("white", 200);
                     } else {
                         combo++; score += 10;
-                        if (combo > 0 && combo % 10 === 0) {
-                            if (hp < 3) { hp++; sndHeal.play().catch(() => {}); triggerFlash("white", 100); }
-                        }
+                        motsuEatenCount++;
                     }
                     updateUI();
                     motsu.remove();
