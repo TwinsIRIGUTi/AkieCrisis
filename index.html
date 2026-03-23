@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>アキエクライシス - 梅割り回復版</title>
+    <title>アキエクライシス - 究極調整版</title>
     <style>
         body { background: #1a0000; margin: 0; padding: 0; display: flex; flex-direction: column; align-items: center; overflow: hidden; touch-action: none; font-family: 'Hiragino Kaku Gothic ProN', sans-serif; }
         #game-screen { 
@@ -41,7 +41,7 @@
         <div id="title-screen" class="overlay">
             <div class="crisis-title">アキエクライシス</div>
             <p class="instruction">
-                10個食べると「梅割り」出現のチャンス！<br>
+                10個食べれば体力全快！？<br>
                 <span style="color: #ff00ff; font-weight: bold; font-size: 16px;">梅割り呑んで回復だ！！</span>
             </p>
             <div class="enemy-box">
@@ -94,9 +94,12 @@
         let score, hp, combo, playerLine, isGameRunning = false, spawnInterval;
         let lastLine = -1;
         let baseFallSpeed = 1.3;
-        let motsuEatenCount = 0; 
+        let autoHealCounter = 0;   // 10個用
+        let umewariLotteryCounter = 0; // 14個用
+        let currentPlayerImgIdx = 1; // 1または2
         
-        const UMEWARI_COUNT_TRIGGER = 10;
+        const AUTO_HEAL_TRIGGER = 10;
+        const UMEWARI_LOTTERY_TRIGGER = 14;
         const UMEWARI_PROBABILITY = 0.25;
 
         const totalLines = 5;
@@ -121,10 +124,12 @@
 
         function startGame() {
             [sndMove, sndDamage, sndSiren, sndHeal].forEach(s => { s.play().then(() => { s.pause(); s.currentTime = 0; }).catch(() => {}); });
-            score = 0; hp = 3; combo = 0; playerLine = 2; baseFallSpeed = 1.3; motsuEatenCount = 0;
+            score = 0; hp = 3; combo = 0; playerLine = 2; baseFallSpeed = 1.3; 
+            autoHealCounter = 0; umewariLotteryCounter = 0;
             isGameRunning = true;
             titleScreen.style.display = 'none';
             player.classList.remove('shivering');
+            currentPlayerImgIdx = 1;
             player.style.backgroundImage = "url('./images/player1.png')";
             updateUI();
             updatePlayerPos(false);
@@ -186,8 +191,13 @@
 
         function updatePlayerPos(playSound = true) {
             player.style.left = (playerLine * lineWidth + (lineWidth - 70)/2) + 'px';
-            player.style.backgroundImage = `url('./images/player${(score/10 % 2) + 1 | 0}.png')`;
-            if (playSound) { sndMove.currentTime = 0; sndMove.play().catch(() => {}); }
+            if (playSound) { 
+                // 画像を1←→2に必ず反転させる
+                currentPlayerImgIdx = (currentPlayerImgIdx === 1) ? 2 : 1;
+                player.style.backgroundImage = `url('./images/player${currentPlayerImgIdx}.png')`;
+                sndMove.currentTime = 0; 
+                sndMove.play().catch(() => {}); 
+            }
         }
 
         window.moveLeft = () => { if(playerLine > 0 && isGameRunning) { playerLine--; updatePlayerPos(); } };
@@ -201,8 +211,10 @@
 
             const motsu = document.createElement('div');
             let data;
-            if (motsuEatenCount >= UMEWARI_COUNT_TRIGGER) {
-                motsuEatenCount = 0; 
+
+            // 14個ごとに25%の確率で梅割り出現抽選
+            if (umewariLotteryCounter >= UMEWARI_LOTTERY_TRIGGER) {
+                umewariLotteryCounter = 0;
                 if (Math.random() < UMEWARI_PROBABILITY) {
                     data = itemUmewari;
                     motsu.classList.add('item-umewari');
@@ -233,12 +245,25 @@
                         triggerFlash("red", 150);
                         if (hp <= 0) gameOver();
                     } else if (data.type === 'item') {
+                        // 梅割りを取った時の回復
                         if (hp < 3) hp++;
                         sndHeal.play().catch(() => {});
                         triggerFlash("white", 200);
                     } else {
+                        // 通常のモツ
                         combo++; score += 10;
-                        motsuEatenCount++;
+                        autoHealCounter++;
+                        umewariLotteryCounter++;
+
+                        // 10個食べたら必ず1回復
+                        if (autoHealCounter >= AUTO_HEAL_TRIGGER) {
+                            autoHealCounter = 0;
+                            if (hp < 3) {
+                                hp++;
+                                sndHeal.play().catch(() => {});
+                                triggerFlash("white", 200);
+                            }
+                        }
                     }
                     updateUI();
                     motsu.remove();
