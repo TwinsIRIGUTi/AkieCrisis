@@ -3,53 +3,90 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>モツーズ・サバイバル</title>
+    <title>モツーズ・サバイバル・完全版</title>
     <style>
-        body { background: #333; margin: 0; padding: 0; display: flex; flex-direction: column; align-items: center; overflow: hidden; touch-action: none; font-family: sans-serif; }
-        #game-screen { position: relative; width: 360px; height: 500px; background: skyblue; border: 4px solid #fff; margin-top: 20px; overflow: hidden; }
+        body { background: #333; margin: 0; padding: 0; display: flex; flex-direction: column; align-items: center; overflow: hidden; touch-action: none; font-family: 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif; }
         
+        /* ゲーム画面 */
+        #game-screen { 
+            position: relative; width: 360px; height: 500px; 
+            background: skyblue; border: 4px solid #fff; margin-top: 20px; 
+            overflow: hidden; border-radius: 10px; 
+        }
+        
+        /* プレイヤー（トコトコ動く） */
         #player {
             position: absolute; bottom: 10px; width: 70px; height: 70px;
             background-size: contain; background-repeat: no-repeat; background-position: center;
             z-index: 10; transition: left 0.1s ease-out;
-            border: 2px solid yellow; /* デバッグ用 */
+        }
+
+        /* ぷりぷりアニメーション（1秒ごとに反転） */
+        @keyframes puripuri {
+            0%, 49% { transform: scaleX(1); }
+            50%, 100% { transform: scaleX(-1); }
+        }
+
+        /* 震えるアニメーション（おなかをこわした時） */
+        @keyframes shiver {
+            0% { transform: translate(0, 0); }
+            25% { transform: translate(2px, -2px); }
+            50% { transform: translate(-2px, 2px); }
+            75% { transform: translate(2px, 2px); }
+            100% { transform: translate(0, 0); }
+        }
+
+        /* 点滅アニメーション */
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
         }
 
         .motsu {
             position: absolute; width: 60px; height: 60px;
             background-size: contain; background-repeat: no-repeat; background-position: center;
             z-index: 5;
-            border: 1px dashed white; /* デバッグ用 */
+            animation: puripuri 1s infinite; /* ぷりぷり感 */
         }
 
-        #ui-layer { position: absolute; top: 10px; width: 100%; display: flex; justify-content: space-around; color: white; font-weight: bold; text-shadow: 2px 2px #000; z-index: 20; }
-        .info { font-size: 18px; }
+        .shivering { animation: shiver 0.1s infinite !important; }
 
+        /* UI表示 */
+        #ui-layer { position: absolute; top: 10px; width: 100%; display: flex; justify-content: space-around; color: white; font-weight: bold; text-shadow: 2px 2px #000; z-index: 20; pointer-events: none; }
+        
+        .overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85); color: white; display: flex; 
+            flex-direction: column; align-items: center; justify-content: center; z-index: 100;
+        }
+        
+        .ranking-list { list-style: none; padding: 0; text-align: center; color: #ffcc00; font-size: 18px; margin: 10px 0; }
+        .start-btn { padding: 15px 40px; font-size: 24px; background: #28a745; color: white; border: none; border-radius: 10px; cursor: pointer; margin-top: 10px; }
+        #guide-msg { font-size: 14px; margin-top: 15px; animation: blink 1s infinite; color: #ccc; }
+
+        /* 操作ボタン */
         #controls { display: flex; gap: 30px; margin-top: 20px; }
         .btn { width: 120px; height: 80px; font-size: 40px; color: white; background: #ff9900; border: none; border-bottom: 6px solid #cc7700; border-radius: 20px; }
-        
-        /* ゲームオーバー表示 */
-        #game-over {
-            display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.8); color: white; flex-direction: column;
-            align-items: center; justify-content: center; z-index: 100;
-        }
     </style>
 </head>
 <body>
 
     <div id="game-screen">
+        <div id="title-screen" class="overlay">
+            <h1 id="main-title" style="color: #ff9900; text-shadow: 2px 2px #fff; text-align: center;">モツーズ</h1>
+            <div id="result-area"></div>
+            <p>🏆 ハイスコア 🏆</p>
+            <ul id="ranking-display" class="ranking-list"></ul>
+            <button class="start-btn" onclick="startGame()">スタート！</button>
+            <p id="guide-msg" style="display:none;">画面タッチかキーでタイトルへ</p>
+        </div>
+
         <div id="ui-layer">
             <div id="hp-display">体力: ❤️❤️❤️</div>
             <div id="score-board">0点</div>
             <div id="combo-display">コンボ: 0</div>
         </div>
-        <div id="player" style="background-image: url('./images/player.png');"></div>
-        <div id="game-over">
-            <h1>GAME OVER</h1>
-            <p id="final-score">スコア: 0</p>
-            <button onclick="location.reload()" style="padding: 10px 20px; font-size: 20px;">もう一度</button>
-        </div>
+        <div id="player"></div>
     </div>
 
     <div id="controls">
@@ -63,16 +100,17 @@
         const scoreDisplay = document.getElementById('score-board');
         const hpDisplay = document.getElementById('hp-display');
         const comboDisplay = document.getElementById('combo-display');
-        const gameOverScreen = document.getElementById('game-over');
+        const titleScreen = document.getElementById('title-screen');
+        const mainTitle = document.getElementById('main-title');
+        const rankingDisplay = document.getElementById('ranking-display');
+        const resultArea = document.getElementById('result-area');
+        const guideMsg = document.getElementById('guide-msg');
 
-        let score = 0;
-        let hp = 3;
-        let combo = 0;
-        let pointPerMotsu = 10;
-        let playerLine = 2;
+        let score, hp, combo, pointPerMotsu, playerLine, isGameRunning = false;
+        let playerImageState = 1; 
         const totalLines = 5;
         const lineWidth = 360 / totalLines;
-        let isGameOver = false;
+        const fallSpeed = 1.6; // モツの落下速度（ゆっくり）
 
         const motsuTypes = [
             { name: 'シロ', img: './images/shiro.png', type: 'score' },
@@ -84,22 +122,91 @@
             { name: 'ナンコツ', img: './images/nankotsu.png', type: 'damage' }
         ];
 
+        window.onload = updateRankingDisplay;
+
+        function updateRankingDisplay() {
+            const scores = JSON.parse(localStorage.getItem('motsuHighScores')) || [0, 0, 0];
+            rankingDisplay.innerHTML = scores.map((s, i) => `<li>${i+1}位: ${s}点</li>`).join('');
+        }
+
+        function saveScore(newScore) {
+            let scores = JSON.parse(localStorage.getItem('motsuHighScores')) || [0, 0, 0];
+            scores.push(newScore);
+            scores.sort((a, b) => b - a);
+            localStorage.setItem('motsuHighScores', JSON.stringify(scores.slice(0, 3)));
+        }
+
+        function startGame() {
+            score = 0; hp = 3; combo = 0; pointPerMotsu = 10; playerLine = 2;
+            isGameRunning = true;
+            titleScreen.style.display = 'none';
+            player.classList.remove('shivering');
+            player.style.backgroundImage = "url('./images/player1.png')";
+            updateUI();
+            updatePlayerPos();
+            spawnInterval = setInterval(spawnMotsu, 1400); // 出現間隔
+        }
+
+        function gameOver() {
+            if (!isGameRunning) return;
+            isGameRunning = false;
+            clearInterval(spawnInterval);
+
+            player.classList.add('shivering'); // 震える演出
+            screen.style.backgroundColor = "red"; // フラッシュ
+            
+            setTimeout(() => {
+                screen.style.backgroundColor = "skyblue";
+                saveScore(score);
+                updateRankingDisplay();
+
+                titleScreen.style.display = 'flex';
+                mainTitle.innerHTML = "おなかを<br>こわした！！";
+                mainTitle.style.color = "#ff4444";
+                resultArea.innerHTML = `<p style="font-size:20px;">今回のスコア: <span style="color:#ffcc00; font-size:32px;">${score}</span> 点</p>`;
+                
+                guideMsg.style.display = 'block';
+                titleScreen.querySelector('.start-btn').style.display = 'none';
+
+                // どこでもタッチでタイトルへ
+                setTimeout(() => {
+                    const backToTitle = () => {
+                        window.removeEventListener('touchstart', backToTitle);
+                        window.removeEventListener('keydown', backToTitle);
+                        resetMenu();
+                    };
+                    window.addEventListener('touchstart', backToTitle);
+                    window.addEventListener('keydown', backToTitle);
+                }, 500);
+            }, 600);
+        }
+
+        function resetMenu() {
+            mainTitle.innerText = "モツーズ";
+            mainTitle.style.color = "#ff9900";
+            resultArea.innerHTML = "";
+            guideMsg.style.display = 'none';
+            titleScreen.querySelector('.start-btn').style.display = 'block';
+        }
+
         function updateUI() {
             scoreDisplay.innerText = score + "点";
             comboDisplay.innerText = "コンボ: " + combo;
-            hpDisplay.innerText = "体力: " + "❤️".repeat(hp);
+            hpDisplay.innerText = "体力: " + "❤️".repeat(Math.max(0, hp));
         }
 
         function updatePlayerPos() {
             player.style.left = (playerLine * lineWidth + (lineWidth - 70)/2) + 'px';
+            // 移動ごとに画像を切り替え
+            playerImageState = (playerImageState === 1) ? 2 : 1;
+            player.style.backgroundImage = `url('./images/player${playerImageState}.png')`;
         }
-        updatePlayerPos();
 
-        window.moveLeft = () => { if(playerLine > 0 && !isGameOver) playerLine--; updatePlayerPos(); };
-        window.moveRight = () => { if(playerLine < totalLines - 1 && !isGameOver) playerLine++; updatePlayerPos(); };
+        window.moveLeft = () => { if(playerLine > 0 && isGameRunning) playerLine--; updatePlayerPos(); };
+        window.moveRight = () => { if(playerLine < totalLines - 1 && isGameRunning) playerLine++; updatePlayerPos(); };
 
         function spawnMotsu() {
-            if (isGameOver) return;
+            if (!isGameRunning) return;
             const motsu = document.createElement('div');
             const data = motsuTypes[Math.floor(Math.random() * motsuTypes.length)];
             const line = Math.floor(Math.random() * totalLines);
@@ -112,30 +219,20 @@
 
             let top = -70;
             function fall() {
-                if (isGameOver) { motsu.remove(); return; }
-                top += 2.5;
+                if (!isGameRunning) { motsu.remove(); return; }
+                top += fallSpeed;
                 motsu.style.top = top + 'px';
 
                 if (top > 380 && top < 450 && line === playerLine) {
                     if (data.type === 'damage') {
-                        // ダメージ
-                        hp--;
-                        combo = 0;
-                        pointPerMotsu = 10;
-                        if (hp <= 0) {
-                            isGameOver = true;
-                            document.getElementById('final-score').innerText = "スコア: " + score;
-                            gameOverScreen.style.display = 'flex';
-                        }
+                        hp--; combo = 0; pointPerMotsu = 10;
+                        if (hp <= 0) gameOver();
                     } else {
-                        // スコア獲得
                         combo++;
                         score += pointPerMotsu;
-                        
-                        // 10個ごとのボーナス
                         if (combo > 0 && combo % 10 === 0) {
-                            pointPerMotsu += 5; // 以降、獲得点数がアップ
-                            if (hp < 3) hp++;   // 体力1回復（最大3）
+                            pointPerMotsu += 5;
+                            if (hp < 3) hp++;
                         }
                     }
                     updateUI();
@@ -147,9 +244,6 @@
             }
             requestAnimationFrame(fall);
         }
-
-        setInterval(spawnMotsu, 1500);
-        updateUI();
     </script>
 </body>
 </html>
