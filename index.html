@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>一本歯のモツパクゲーム - テスト版</title>
+    <title>一本歯のモツパクゲーム - シロ追加版</title>
     <style>
         body { 
             background: #222; 
@@ -13,91 +13,74 @@
             justify-content: center; 
             height: 100vh; 
             margin: 0; 
-            font-family: 'Courier New', Courier, monospace;
+            font-family: sans-serif;
             color: white; 
-            touch-action: manipulation; /* ダブルタップズーム防止 */
+            touch-action: manipulation;
         }
 
-        /* ゲーム画面（5ライン想定: 幅400px） */
+        /* ゲーム画面（空の色に変更） */
         #game-screen { 
             position: relative; 
             width: 400px; 
-            height: 550px; 
-            background: #eee; 
-            border: 5px solid #000; 
+            height: 600px; 
+            background: #87CEEB; /* スカイブルー */
+            border: 5px solid #333; 
             overflow: hidden; 
         }
         
-        /* プレイヤー（一本歯ドット絵） */
+        /* プレイヤー（一本歯キャラクター） */
         #player {
             position: absolute;
-            bottom: 10px;
-            width: 80px;  /* 1ラインの幅 */
+            bottom: 20px;
+            width: 80px; 
             height: 80px;
-            /* GitHubのフォルダ構成に合わせる */
             background-image: url('images/player.png'); 
             background-size: contain;
             background-repeat: no-repeat;
             background-position: center;
-            background-color: transparent;
-            transition: left 0.05s ease-out; /* 素早い移動 */
-            z-index: 10;
+            /* 画像がない時のための仮の姿（ピンクの枠） */
+            border: 2px dashed #ff69b4;
+            transition: left 0.1s ease-out;
+            z-index: 100; /* 最前面に */
         }
 
-        /* 落ちてくるモツ（仮の丸型） */
+        /* 落ちてくるシロ */
         .motsu {
             position: absolute;
-            width: 50px;
-            height: 50px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 16px;
-            font-weight: bold;
-            color: #fff;
-            border-radius: 50%;
-            border: 2px solid #000;
-            text-shadow: 1px 1px 0 #000;
+            width: 70px;
+            height: 70px;
+            background-image: url('images/shiro.png'); /* シロの画像 */
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            /* 画像がない時のための色（白） */
+            background-color: rgba(255,255,255,0.3);
+            border-radius: 10px;
         }
 
-        /* スコア表示 */
         #score-board {
             position: absolute;
             top: 10px;
-            right: 15px;
-            color: #333;
-            font-size: 24px;
+            left: 10px;
+            color: #fff;
+            font-size: 28px;
             font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            z-index: 200;
         }
 
-        /* 操作ボタン */
-        #controls { 
-            margin-top: 20px; 
-            display: flex; 
-            gap: 50px; 
-        }
+        #controls { margin-top: 20px; display: flex; gap: 40px; }
         .btn { 
-            width: 100px;
-            height: 60px;
-            font-size: 30px; 
-            cursor: pointer; 
-            background: #e74c3c; 
-            color: white; 
-            border: none; 
-            border-bottom: 5px solid #c0392b;
-            border-radius: 10px;
-            font-weight: bold;
-        }
-        .btn:active {
-            border-bottom: 0;
-            transform: translateY(5px);
+            width: 100px; height: 70px; font-size: 30px; 
+            background: #ffcc00; border: none; 
+            border-bottom: 5px solid #ccaa00; border-radius: 15px;
         }
     </style>
 </head>
 <body>
 
     <div id="game-screen">
-        <div id="score-board">0</div>
+        <div id="score-board">SCORE: 0</div>
         <div id="player"></div>
     </div>
 
@@ -112,86 +95,61 @@
         const scoreDisplay = document.getElementById('score-board');
         
         let score = 0;
-        let playerLine = 2; // 初期位置（中央：0,1,2,3,4）
+        let playerLine = 2; 
         const totalLines = 5;
-        const lineWidth = 80; // 400px / 5line
+        const lineWidth = 80;
 
-        // モツのデータ
-        const motsuList = [
-            { name: 'ハツ', color: '#a04040' },
-            { name: 'レバ', color: '#602020' },
-            { name: 'ナンコツ', color: '#d2b48c' },
-            { name: 'ガツ', color: '#f5deb3' },
-            { name: 'シロ', color: '#ffffff' },
-            { name: 'カシラ', color: '#8b4513' }
-        ];
-
-        // プレイヤーの位置を更新
         function updatePosition() {
             player.style.left = (playerLine * lineWidth) + 'px';
         }
-        updatePosition(); // 初回配置
+        updatePosition();
 
-        // 移動処理
         function moveLeft() { if (playerLine > 0) playerLine--; updatePosition(); }
         function moveRight() { if (playerLine < totalLines - 1) playerLine++; updatePosition(); }
 
-        // ボタンイベント
-        document.getElementById('left-btn').addEventListener('touchstart', (e) => { e.preventDefault(); moveLeft(); });
-        document.getElementById('left-btn').addEventListener('click', moveLeft);
-        
-        document.getElementById('right-btn').addEventListener('touchstart', (e) => { e.preventDefault(); moveRight(); });
-        document.getElementById('right-btn').addEventListener('click', moveRight);
-
-        // キーボード操作
-        window.addEventListener('keydown', (e) => {
+        document.getElementById('left-btn').onclick = moveLeft;
+        document.getElementById('right-btn').onclick = moveRight;
+        window.onkeydown = (e) => {
             if (e.key === 'ArrowLeft') moveLeft();
             if (e.key === 'ArrowRight') moveRight();
-        });
+        };
 
-        // モツ生成
         function spawnMotsu() {
             const motsu = document.createElement('div');
-            const type = motsuList[Math.floor(Math.random() * motsuList.length)];
             const line = Math.floor(Math.random() * totalLines);
             
             motsu.className = 'motsu';
-            motsu.innerText = type.name;
-            motsu.style.backgroundColor = type.color;
-            motsu.style.left = (line * lineWidth + 15) + 'px'; // 中央寄せ
-            motsu.style.top = '-60px';
-            
+            motsu.style.left = (line * lineWidth + 5) + 'px';
+            motsu.style.top = '-80px';
             screen.appendChild(motsu);
 
-            let currentTop = -60;
-            const fallSpeed = 4 + Math.random() * 3; // 落下速度のばらつき
+            let currentTop = -80;
+            // 落下速度をかなり遅く設定（1〜2px程度）
+            const fallSpeed = 1.5 + Math.random() * 1.5; 
 
             function fall() {
                 currentTop += fallSpeed;
                 motsu.style.top = currentTop + 'px';
 
-                // 当たり判定 (プレイヤーの頭付近に到達)
-                if (currentTop > 430 && currentTop < 490 && line === playerLine) {
+                // 当たり判定
+                if (currentTop > 450 && currentTop < 520 && line === playerLine) {
                     score += 10;
-                    scoreDisplay.innerText = score;
+                    scoreDisplay.innerText = "SCORE: " + score;
                     motsu.remove();
                     return;
                 }
 
-                // 画面外へ
-                if (currentTop > 550) {
+                if (currentTop > 600) {
                     motsu.remove();
                     return;
                 }
-
                 requestAnimationFrame(fall);
             }
             requestAnimationFrame(fall);
         }
 
-        // 1.2秒おきにモツを降らせる
-        setInterval(spawnMotsu, 1200);
-
+        // 生成間隔も少しゆったり（2秒に1回）
+        setInterval(spawnMotsu, 2000);
     </script>
 </body>
 </html>
