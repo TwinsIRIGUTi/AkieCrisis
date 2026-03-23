@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>アキエクライシス - 伝票リザルト版</title>
+    <title>アキエクライシス - 宴の終焉</title>
     <style>
         body { 
             background: #1a0000; margin: 0; padding: 0; display: flex; flex-direction: column; align-items: center; overflow: hidden; touch-action: none; font-family: 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif;
@@ -57,7 +57,7 @@
 
         #ui-layer { position: absolute; top: 10px; width: 100%; display: flex; justify-content: space-around; color: white; font-weight: bold; text-shadow: 2px 2px #000; z-index: 20; pointer-events: none; }
         #controls { display: flex; gap: 30px; margin-top: 15px; }
-        .btn { width: 120px; height: 80px; font-size: 40px; color: white; background: #880000; border: none; border-bottom: 6px solid #440000; border-radius: 20px; cursor: pointer; }
+        .btn { width: 120px; height: 80px; font-size: 40px; color: white; background: #880000; border: none; border-bottom: 6px solid #440000; border-radius: 20px; cursor: pointer; touch-action: manipulation; }
     </style>
 </head>
 <body oncontextmenu="return false;">
@@ -98,7 +98,7 @@
         <div id="how-to-play-screen" class="overlay" style="display:none;">
             <h2 style="color: #ffcc00; margin-top: 0;">宴のルール</h2>
             <div style="font-size: 14px; line-height: 1.6; color: #eee; width: 100%;">
-                <p>● 左右のボタンで移動してモツを食べよう！</p>
+                <p>● 左右ボタンで移動してモツを喰らえ！</p>
                 <p>● 10個食べると<span style="color:#00ff00;">体力回復</span>！</p>
                 <p>● 14個で<span style="color:#ff00ff;">梅割り</span>抽選！</p>
                 <p>● 体力満タンで飲むと<span style="color:#ffcc00;">＋100点ボーナス</span>！</p>
@@ -157,17 +157,21 @@
             isGameRunning = true; titleScreen.style.display = 'none'; hideHowTo(); bgDangerLayer.classList.remove('danger-active');
             updateUI(); updatePlayerPos(false);
             
+            // 背景タイマー開始
             lastSwitchTime = Date.now();
+            if (bgInterval) clearInterval(bgInterval);
             bgInterval = setInterval(() => {
                 const now = Date.now();
                 if (now - lastSwitchTime >= 30000) {
                     const bgs = document.querySelectorAll('.bg-layer');
+                    let nextIdx;
+                    do { nextIdx = Math.floor(Math.random() * bgs.length); } while (nextIdx === lastBgIdx);
                     bgs.forEach(b => b.classList.remove('bg-active'));
-                    let nextIdx; do { nextIdx = Math.floor(Math.random() * bgs.length); } while (nextIdx === lastBgIdx);
                     bgs[nextIdx].classList.add('bg-active');
-                    lastBgIdx = nextIdx; lastSwitchTime = now;
+                    lastBgIdx = nextIdx;
+                    lastSwitchTime = now;
                 }
-            }, 1000);
+            }, 500);
 
             charInterval = setInterval(() => {
                 if (score >= 1000) { charProbBase = Math.min(charProbBase + 0.01, 0.80); }
@@ -177,7 +181,9 @@
         }
 
         function gameOver() {
-            isGameRunning = false; clearInterval(spawnInterval); clearInterval(bgInterval); clearInterval(charInterval);
+            if (!isGameRunning) return;
+            isGameRunning = false; 
+            clearInterval(spawnInterval); clearInterval(bgInterval); clearInterval(charInterval);
             sounds.bgm.pause(); sounds.siren.pause(); sounds.damage.play();
             player.classList.add('shivering');
             flash.style.opacity = "0.7"; setTimeout(() => flash.style.opacity = "0", 150);
@@ -273,6 +279,8 @@
         }
 
         function handleColl(d) {
+            if (!isGameRunning) return; // デバッグ修正：ゲーム停止中の衝突を無視
+
             if (d.type === 'damage') {
                 hp--; combo = 0; sounds.damage.play();
                 flash.style.opacity = "0.7"; setTimeout(() => flash.style.opacity = "0", 150);
