@@ -3,27 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>モツーズ・デバッグ版</title>
+    <title>モツーズ・カシラ参戦版</title>
     <style>
         body { background: #333; margin: 0; padding: 0; display: flex; flex-direction: column; align-items: center; overflow: hidden; touch-action: none; }
         #game-screen { position: relative; width: 360px; height: 500px; background: skyblue; border: 4px solid #fff; margin-top: 20px; overflow: hidden; }
         
-        /* プレイヤー */
         #player {
             position: absolute; bottom: 10px; width: 70px; height: 70px;
             background-size: contain; background-repeat: no-repeat; background-position: center;
             z-index: 10; transition: left 0.1s ease-out;
-            /* デバッグ用：画像がない時に形を見せる */
-            border: 2px solid yellow; 
+            border: 2px solid yellow; /* デバッグ用枠線 */
         }
 
-        /* 落ちてくるモツ */
         .motsu {
             position: absolute; width: 60px; height: 60px;
             background-size: contain; background-repeat: no-repeat; background-position: center;
             z-index: 5;
-            /* デバッグ用：画像がない時に枠を見せる */
-            border: 1px dashed white;
+            border: 1px dashed white; /* デバッグ用枠線 */
         }
 
         #score-board { position: absolute; top: 10px; width: 100%; text-align: center; font-size: 24px; color: white; font-weight: bold; text-shadow: 2px 2px #000; z-index: 20; }
@@ -53,15 +49,24 @@
         const totalLines = 5;
         const lineWidth = 360 / totalLines;
 
-        // 【重要】ファイル名はすべて「小文字」で、前に「./」を付けています
+        // モツのリスト（カシラを追加）
         const motsuTypes = [
-            { img: './images/shiro.png' },
-            { img: './images/hatsu.png' },
-            { img: './images/lever.png' },
-            { img: './images/gatsu.png' },
-            { img: './images/abura.png' },
-            { img: './images/nankotsu.png' }
+            { name: 'シロ', img: './images/shiro.png' },
+            { name: 'ハツ', img: './images/hatsu.png' },
+            { name: 'レバー', img: './images/lever.png' },
+            { name: 'ガツ', img: './images/gatsu.png' },
+            { name: 'アブラ', img: './images/abura.png' },
+            { name: 'ナンコツ', img: './images/nankotsu.png' },
+            { name: 'カシラ', img: './images/kasira.png' } // ←ここに追加しました
         ];
+
+        // 画像の読み込みテスト（コンソールで確認用）
+        motsuTypes.forEach(m => {
+            const testImg = new Image();
+            testImg.onload = () => console.log(`読み込み成功: ${m.name}`);
+            testImg.onerror = () => console.error(`読み込み失敗: ${m.name} (${m.img})`);
+            testImg.src = m.img;
+        });
 
         function updatePlayerPos() {
             player.style.left = (playerLine * lineWidth + (lineWidth - 70)/2) + 'px';
@@ -77,7 +82,6 @@
             const line = Math.floor(Math.random() * totalLines);
             
             motsu.className = 'motsu';
-            // ここで背景画像を設定
             motsu.style.backgroundImage = `url('${type.img}')`;
             motsu.style.left = (line * lineWidth + (lineWidth - 60)/2) + 'px';
             motsu.style.top = '-70px';
@@ -85,7 +89,7 @@
 
             let top = -70;
             function fall() {
-                top += 2;
+                top += 2.5; // 少しだけスピードアップ
                 motsu.style.top = top + 'px';
 
                 if (top > 380 && top < 450 && line === playerLine) {
@@ -99,7 +103,7 @@
             }
             requestAnimationFrame(fall);
         }
-        setInterval(spawnMotsu, 2000);
+        setInterval(spawnMotsu, 1800);
     </script>
 </body>
 </html>
