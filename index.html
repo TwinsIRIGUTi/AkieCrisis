@@ -3,35 +3,53 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>モツーズ・カシラ参戦版</title>
+    <title>モツーズ・サバイバル</title>
     <style>
-        body { background: #333; margin: 0; padding: 0; display: flex; flex-direction: column; align-items: center; overflow: hidden; touch-action: none; }
+        body { background: #333; margin: 0; padding: 0; display: flex; flex-direction: column; align-items: center; overflow: hidden; touch-action: none; font-family: sans-serif; }
         #game-screen { position: relative; width: 360px; height: 500px; background: skyblue; border: 4px solid #fff; margin-top: 20px; overflow: hidden; }
         
         #player {
             position: absolute; bottom: 10px; width: 70px; height: 70px;
             background-size: contain; background-repeat: no-repeat; background-position: center;
             z-index: 10; transition: left 0.1s ease-out;
-            border: 2px solid yellow; /* デバッグ用枠線 */
+            border: 2px solid yellow; /* デバッグ用 */
         }
 
         .motsu {
             position: absolute; width: 60px; height: 60px;
             background-size: contain; background-repeat: no-repeat; background-position: center;
             z-index: 5;
-            border: 1px dashed white; /* デバッグ用枠線 */
+            border: 1px dashed white; /* デバッグ用 */
         }
 
-        #score-board { position: absolute; top: 10px; width: 100%; text-align: center; font-size: 24px; color: white; font-weight: bold; text-shadow: 2px 2px #000; z-index: 20; }
+        #ui-layer { position: absolute; top: 10px; width: 100%; display: flex; justify-content: space-around; color: white; font-weight: bold; text-shadow: 2px 2px #000; z-index: 20; }
+        .info { font-size: 18px; }
+
         #controls { display: flex; gap: 30px; margin-top: 20px; }
         .btn { width: 120px; height: 80px; font-size: 40px; color: white; background: #ff9900; border: none; border-bottom: 6px solid #cc7700; border-radius: 20px; }
+        
+        /* ゲームオーバー表示 */
+        #game-over {
+            display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8); color: white; flex-direction: column;
+            align-items: center; justify-content: center; z-index: 100;
+        }
     </style>
 </head>
 <body>
 
     <div id="game-screen">
-        <div id="score-board">スコア: 0</div>
+        <div id="ui-layer">
+            <div id="hp-display">体力: ❤️❤️❤️</div>
+            <div id="score-board">0点</div>
+            <div id="combo-display">コンボ: 0</div>
+        </div>
         <div id="player" style="background-image: url('./images/player.png');"></div>
+        <div id="game-over">
+            <h1>GAME OVER</h1>
+            <p id="final-score">スコア: 0</p>
+            <button onclick="location.reload()" style="padding: 10px 20px; font-size: 20px;">もう一度</button>
+        </div>
     </div>
 
     <div id="controls">
@@ -43,58 +61,84 @@
         const screen = document.getElementById('game-screen');
         const player = document.getElementById('player');
         const scoreDisplay = document.getElementById('score-board');
-        
+        const hpDisplay = document.getElementById('hp-display');
+        const comboDisplay = document.getElementById('combo-display');
+        const gameOverScreen = document.getElementById('game-over');
+
         let score = 0;
+        let hp = 3;
+        let combo = 0;
+        let pointPerMotsu = 10;
         let playerLine = 2;
         const totalLines = 5;
         const lineWidth = 360 / totalLines;
+        let isGameOver = false;
 
-        // モツのリスト（カシラを追加）
         const motsuTypes = [
-            { name: 'シロ', img: './images/shiro.png' },
-            { name: 'ハツ', img: './images/hatsu.png' },
-            { name: 'レバー', img: './images/lever.png' },
-            { name: 'ガツ', img: './images/gatsu.png' },
-            { name: 'アブラ', img: './images/abura.png' },
-            { name: 'ナンコツ', img: './images/nankotsu.png' },
-            { name: 'カシラ', img: './images/kasira.png' } // ←ここに追加しました
+            { name: 'シロ', img: './images/shiro.png', type: 'score' },
+            { name: 'ハツ', img: './images/hatsu.png', type: 'score' },
+            { name: 'レバー', img: './images/lever.png', type: 'score' },
+            { name: 'アブラ', img: './images/abura.png', type: 'score' },
+            { name: 'カシラ', img: './images/kasira.png', type: 'score' },
+            { name: 'ガツ', img: './images/gatsu.png', type: 'damage' },
+            { name: 'ナンコツ', img: './images/nankotsu.png', type: 'damage' }
         ];
 
-        // 画像の読み込みテスト（コンソールで確認用）
-        motsuTypes.forEach(m => {
-            const testImg = new Image();
-            testImg.onload = () => console.log(`読み込み成功: ${m.name}`);
-            testImg.onerror = () => console.error(`読み込み失敗: ${m.name} (${m.img})`);
-            testImg.src = m.img;
-        });
+        function updateUI() {
+            scoreDisplay.innerText = score + "点";
+            comboDisplay.innerText = "コンボ: " + combo;
+            hpDisplay.innerText = "体力: " + "❤️".repeat(hp);
+        }
 
         function updatePlayerPos() {
             player.style.left = (playerLine * lineWidth + (lineWidth - 70)/2) + 'px';
         }
         updatePlayerPos();
 
-        window.moveLeft = () => { if(playerLine > 0) playerLine--; updatePlayerPos(); };
-        window.moveRight = () => { if(playerLine < totalLines - 1) playerLine++; updatePlayerPos(); };
+        window.moveLeft = () => { if(playerLine > 0 && !isGameOver) playerLine--; updatePlayerPos(); };
+        window.moveRight = () => { if(playerLine < totalLines - 1 && !isGameOver) playerLine++; updatePlayerPos(); };
 
         function spawnMotsu() {
+            if (isGameOver) return;
             const motsu = document.createElement('div');
-            const type = motsuTypes[Math.floor(Math.random() * motsuTypes.length)];
+            const data = motsuTypes[Math.floor(Math.random() * motsuTypes.length)];
             const line = Math.floor(Math.random() * totalLines);
             
             motsu.className = 'motsu';
-            motsu.style.backgroundImage = `url('${type.img}')`;
+            motsu.style.backgroundImage = `url('${data.img}')`;
             motsu.style.left = (line * lineWidth + (lineWidth - 60)/2) + 'px';
             motsu.style.top = '-70px';
             screen.appendChild(motsu);
 
             let top = -70;
             function fall() {
-                top += 2.5; // 少しだけスピードアップ
+                if (isGameOver) { motsu.remove(); return; }
+                top += 2.5;
                 motsu.style.top = top + 'px';
 
                 if (top > 380 && top < 450 && line === playerLine) {
-                    score += 10;
-                    scoreDisplay.innerText = "スコア: " + score;
+                    if (data.type === 'damage') {
+                        // ダメージ
+                        hp--;
+                        combo = 0;
+                        pointPerMotsu = 10;
+                        if (hp <= 0) {
+                            isGameOver = true;
+                            document.getElementById('final-score').innerText = "スコア: " + score;
+                            gameOverScreen.style.display = 'flex';
+                        }
+                    } else {
+                        // スコア獲得
+                        combo++;
+                        score += pointPerMotsu;
+                        
+                        // 10個ごとのボーナス
+                        if (combo > 0 && combo % 10 === 0) {
+                            pointPerMotsu += 5; // 以降、獲得点数がアップ
+                            if (hp < 3) hp++;   // 体力1回復（最大3）
+                        }
+                    }
+                    updateUI();
                     motsu.remove();
                     return;
                 }
@@ -103,7 +147,9 @@
             }
             requestAnimationFrame(fall);
         }
-        setInterval(spawnMotsu, 1800);
+
+        setInterval(spawnMotsu, 1500);
+        updateUI();
     </script>
 </body>
 </html>
