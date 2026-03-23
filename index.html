@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>一本歯のモツパクゲーム</title>
+    <style>
+        body { background: #333; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; font-family: sans-serif; color: white; overflow: hidden; }
+        #game-container { position: relative; width: 400px; height: 600px; background: #eee; border: 4px solid #000; overflow: hidden; }
+        
+        /* 自機キャラクター（一本歯） */
+        #player {
+            position: absolute;
+            bottom: 20px;
+            width: 80px;
+            height: 80px;
+            background-image: url('https://img.yamato-machi.jp/api/v1/image_generation_content/1'); /* 先ほどのドット絵URL */
+            background-size: contain;
+            background-repeat: no-repeat;
+            transition: left 0.1s ease-out;
+            z-index: 10;
+        }
+
+        /* 落ちてくるモツ */
+        .motsu {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: bold;
+            border-radius: 50%;
+        }
+
+        /* 操作UI */
+        #ui { margin-top: 20px; display: flex; gap: 40px; }
+        button { padding: 15px 30px; font-size: 20px; cursor: pointer; background: #ff4500; color: white; border: none; border-radius: 8px; font-weight: bold; }
+        #score { position: absolute; top: 10px; left: 10px; color: #000; font-size: 20px; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <div id="game-container">
+        <div id="score">SCORE: 0</div>
+        <div id="player"></div>
+    </div>
+
+    <div id="ui">
+        <button id="left-btn">← 左移動</button>
+        <button id="right-btn">右移動 →</button>
+    </div>
+
+    <script>
+        const container = document.getElementById('game-container');
+        const player = document.getElementById('player');
+        const scoreDisplay = document.getElementById('score');
+        const leftBtn = document.getElementById('left-btn');
+        const rightBtn = document.getElementById('right-btn');
+
+        let score = 0;
+        let playerLine = 2; // 0, 1, 2, 3, 4 の 5ライン想定
+        const totalLines = 5;
+        const lineWidth = 400 / totalLines;
+
+        // モツの種類
+        const motsuTypes = [
+            { name: 'ハツ', color: '#8b0000' },
+            { name: 'レバ', color: '#4b0082' },
+            { name: 'ナンコツ', color: '#f5f5dc' },
+            { name: 'ガツ', color: '#deb887' },
+            { name: 'シロ', color: '#fffafa' },
+            { name: 'カシラ', color: '#a52a2a' }
+        ];
+
+        // プレイヤーの位置更新
+        function updatePlayerPos() {
+            const xPos = (playerLine * lineWidth) + (lineWidth / 2) - 40;
+            player.style.left = xPos + 'px';
+        }
+        updatePlayerPos();
+
+        // 移動ロジック
+        function moveLeft() { if (playerLine > 0) { playerLine--; updatePlayerPos(); } }
+        function moveRight() { if (playerLine < totalLines - 1) { playerLine++; updatePlayerPos(); } }
+
+        leftBtn.addEventListener('click', moveLeft);
+        rightBtn.addEventListener('click', moveRight);
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowLeft') moveLeft();
+            if (e.key === 'ArrowRight') moveRight();
+        });
+
+        // モツの生成
+        function createMotsu() {
+            const motsu = document.createElement('div');
+            const type = motsuTypes[Math.floor(Math.random() * motsuTypes.length)];
+            const line = Math.floor(Math.random() * totalLines);
+            
+            motsu.className = 'motsu';
+            motsu.innerText = type.name.substring(0, 1); // 1文字表示（ハ、レ、ナ等）
+            motsu.style.backgroundColor = type.color;
+            motsu.style.left = (line * lineWidth) + (lineWidth / 2) - 20 + 'px';
+            motsu.style.top = '-50px';
+            motsu.dataset.line = line;
+            
+            container.appendChild(motsu);
+
+            let topPos = -50;
+            const fallInterval = setInterval(() => {
+                topPos += 5;
+                motsu.style.top = topPos + 'px';
+
+                // 当たり判定
+                if (topPos > 500 && topPos < 560 && parseInt(motsu.dataset.line) === playerLine) {
+                    score += 10;
+                    scoreDisplay.innerText = `SCORE: ${score}`;
+                    motsu.remove();
+                    clearInterval(fallInterval);
+                }
+
+                // 画面外
+                if (topPos > 600) {
+                    motsu.remove();
+                    clearInterval(fallInterval);
+                }
+            }, 20);
+        }
+
+        // ゲームループ
+        setInterval(createMotsu, 1000); // 1秒ごとにモツが降ってくる
+
+    </script>
+</body>
+</html>
