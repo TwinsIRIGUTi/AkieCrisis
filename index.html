@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>アキエクライシス - Steady Rhythm</title>
+    <title>アキエクライシス - 完遂</title>
     <style>
         html, body { overflow: hidden; width: 100%; height: 100%; position: fixed; }
         body { background: #1a0000; margin: 0; padding: 0; display: flex; flex-direction: column; align-items: center; touch-action: none; font-family: sans-serif; -webkit-user-select: none; user-select: none; }
@@ -22,6 +22,7 @@
         .item-umewari { filter: drop-shadow(0 0 12px #ff00ff); z-index: 6 !important; }
 
         .crisis-title { font-size: 38px; font-weight: 900; color: #fff; text-shadow: 0 0 10px #ff0000, 3px 3px 0 #880000; margin: 5px 0; font-style: italic; text-align: center; }
+        
         #best-shogo-container { margin: 5px 0 15px 0; padding: 5px 15px; background: rgba(255,255,255,0.1); border-radius: 20px; border: 1px solid #555; font-size: 14px; color: #ccc; text-align: center; }
         #best-shogo-text { font-weight: bold; font-size: 18px; margin-left: 5px; }
 
@@ -30,6 +31,7 @@
         .shivering { animation: shiver 0.1s infinite !important; }
 
         .overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.92); color: white; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 100; padding: 20px; box-sizing: border-box; }
+        
         .denpyo { background: #fdfdf5; color: #333; padding: 15px; width: 240px; box-shadow: 5px 5px 15px rgba(0,0,0,0.5); font-family: monospace; border-top: 4px dotted #ccc; border-bottom: 4px dotted #ccc; margin-bottom: 15px; transform: rotate(1deg); }
         .denpyo h2 { text-align: center; border-bottom: 2px solid #333; margin: 0 0 10px 0; }
         .denpyo-row { display: flex; justify-content: space-between; font-size: 14px; margin: 4px 0; }
@@ -109,8 +111,11 @@
         sounds.bgm.loop = true; sounds.siren.loop = true;
 
         let score, hp, combo, playerLine, isGameRunning = false, spawnInterval, bgInterval, charInterval, confettiInterval;
-        let lastLine = -1, baseFallSpeed = 1.3, autoHealCounter = 0, umewariLotteryCounter = 0, currentPlayerImgIdx = 1;
+        let lastLine = -1, baseFallSpeed = 1.3, autoHealCounter = 0, umewariLotteryCounter = 0, currentPlayerImgIdx = 1, lastPlaybackRate = 1.0;
         let charProbBase = 0.10, lastBgIdx = 0, lastSwitchTime = 0, currentSpawnRate = 1400;
+
+        const motsuScore = [{ img: './images/shiro.png', type: 'score' }, { img: './images/hatsu.png', type: 'score' }, { img: './images/lever.png', type: 'score' }, { img: './images/abura.png', type: 'score' }, { img: './images/kasira.png', type: 'score' }];
+        const motsuDanger = [{ img: './images/gatsu.png', type: 'damage' }, { img: './images/nankotsu.png', type: 'damage' }];
 
         function getShogo(s) {
             if (s >= 10000) return { text: "レジェンド", class: "shogo-legend" };
@@ -158,9 +163,7 @@
                 const ctx = new (window.AudioContext || window.webkitAudioContext)();
                 if (ctx.state === 'suspended') await ctx.resume();
                 for (let k in sounds) { sounds[k].muted = true; await sounds[k].play().then(() => { sounds[k].pause(); sounds[k].muted = false; sounds[k].currentTime = 0; }).catch(()=>{}); }
-                // BGMのレートを常に1.0で開始
-                sounds.bgm.playbackRate = 1.0; 
-                await sounds.bgm.play();
+                sounds.bgm.playbackRate = 1.0; lastPlaybackRate = 1.0; await sounds.bgm.play();
             } catch (e) {}
 
             score = 0; hp = 3; combo = 0; playerLine = 2; baseFallSpeed = 1.3; autoHealCounter = 0; umewariLotteryCounter = 0; charProbBase = 0.10; currentSpawnRate = 1400;
@@ -258,8 +261,9 @@
             motsu.style.left = (line * lineWidth + (lineWidth - 60)/2) + 'px'; motsu.style.top = '-70px'; screen.appendChild(motsu);
             
             baseFallSpeed += 0.005;
-            // BGM加速ロジックを削除
-
+            let targetRate = Math.min(1.0 + (baseFallSpeed - 1.3) * 0.15, 1.8);
+            if (Math.abs(targetRate - lastPlaybackRate) > 0.05) { sounds.bgm.playbackRate = targetRate; lastPlaybackRate = targetRate; }
+            
             let top = -70;
             function fall() {
                 if (!isGameRunning) { motsu.remove(); return; }
