@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>アキエクライシス - Risk & Reward</title>
+    <title>アキエクライシス - Final Tuning</title>
     <style>
         html, body { overflow: hidden; width: 100%; height: 100%; position: fixed; }
         body { background: #1a0000; margin: 0; padding: 0; display: flex; flex-direction: column; align-items: center; touch-action: none; font-family: sans-serif; -webkit-user-select: none; user-select: none; }
@@ -11,11 +11,11 @@
         
         .bg-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-size: cover; background-position: center; opacity: 0; transition: opacity 1.5s; z-index: 1; pointer-events: none;}
         .bg-active { opacity: 1; }
-        #bg-danger { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-image: url('./images/background_danger.png'); background-size: cover; background-position: center; opacity: 0; transition: opacity 0.5s; z-index: 2; pointer-events: none; }
+        #bg-danger { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-image: url('./images/background_danger.png'); background-size: cover; background-position: center; opacity: 0; z-index: 2; pointer-events: none; }
         .danger-active { opacity: 1 !important; }
 
         #damage-flash { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: red; opacity: 0; pointer-events: none; z-index: 50; }
-        #player { position: absolute; bottom: 10px; width: 70px; height: 70px; background-image: url('./images/player1.png'); background-size: contain; background-repeat: no-repeat; background-position: center; z-index: 10; will-change: left; }
+        #player { position: absolute; bottom: 10px; width: 70px; height: 70px; background-image: url('./images/player1.png'); background-size: contain; background-repeat: no-repeat; background-position: center; z-index: 10; will-change: left; transition: transform 0.1s; }
         
         .motsu { position: absolute; width: 60px; height: 60px; background-size: contain; background-repeat: no-repeat; background-position: center; z-index: 5; animation: puripuri 1s infinite; }
         .char-mode { filter: drop-shadow(0 0 15px #ff0000) brightness(1.3) contrast(1.2); z-index: 8 !important; }
@@ -29,8 +29,6 @@
         .crisis-title { font-size: 38px; font-weight: 900; color: #fff; text-shadow: 0 0 10px #ff0000, 3px 3px 0 #880000; margin-bottom: 5px; font-style: italic; }
         
         #best-info-container { margin-bottom: 15px; padding: 10px 20px; background: rgba(255,255,255,0.1); border-radius: 15px; border: 1px solid #555; text-align: center; }
-        #best-shogo-text { font-weight: bold; font-size: 18px; display: block; margin-top: 5px; }
-
         .info-list { text-align: left; font-size: 12px; line-height: 1.3; background: rgba(255,255,255,0.1); padding: 10px; border-radius: 10px; width: 100%; margin-bottom: 10px; }
         .motsu-icons { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 10px 0; justify-content: center; }
         .icon-unit { display: flex; flex-direction: column; align-items: center; font-size: 9px; width: 42px; }
@@ -93,7 +91,6 @@
                 <div class="motsu-icons">
                     <div class="icon-unit"><div class="icon-box" style="background-image:url('./images/umewari.png')"></div>梅割り</div>
                 </div>
-                <p style="font-size:10px; color:#ffaaaa; text-align:center;">高速（赤い光）で降るモツは高得点のチャンス！</p>
             </div>
             <button class="action-btn" style="width:150px;" onpointerdown="hideHowTo()">了解</button>
         </div>
@@ -123,22 +120,13 @@
         };
         sounds.bgm.loop = true; sounds.siren.loop = true;
 
-        let score, hp, combo, playerLine, isGameRunning = false;
+        let score = 0, hp = 3, combo = 0, playerLine = 2, isGameRunning = false;
         let spawnInterval, bgInterval, charInterval;
         let lastLine = -1, baseFallSpeed = 1.3, autoHealCounter = 0, umewariLotteryCounter = 0;
         let lastBgIdx = 0, currentSpawnRate = 1400;
 
-        const motsuScore = [
-            { img: './images/shiro.png', type: 'score' },
-            { img: './images/hatsu.png', type: 'score' },
-            { img: './images/lever.png', type: 'score' },
-            { img: './images/abura.png', type: 'score' },
-            { img: './images/kasira.png', type: 'score' }
-        ];
-        const motsuDanger = [
-            { img: './images/gatsu.png', type: 'damage' },
-            { img: './images/nankotsu.png', type: 'damage' }
-        ];
+        const motsuScore = [{img:'./images/shiro.png',type:'score'},{img:'./images/hatsu.png',type:'score'},{img:'./images/lever.png',type:'score'},{img:'./images/abura.png',type:'score'},{img:'./images/kasira.png',type:'score'}];
+        const motsuDanger = [{img:'./images/gatsu.png',type:'damage'},{img:'./images/nankotsu.png',type:'damage'}];
 
         function getShogo(s) {
             if (s >= 10000) return { text: "レジェンド", class: "shogo-legend" };
@@ -148,15 +136,11 @@
             return { text: "いちげんさん", class: "" };
         }
 
-        function updateBestDisplay() {
-            const bestScore = parseInt(localStorage.getItem('akie_best_score') || '0');
-            const bestShogo = getShogo(bestScore);
-            document.getElementById('best-score-text').innerText = bestScore;
-            const shogoDisp = document.getElementById('best-shogo-text');
-            shogoDisp.innerText = bestShogo.text;
-            shogoDisp.className = bestShogo.class;
-        }
-        window.onload = updateBestDisplay;
+        window.onload = () => {
+            const best = parseInt(localStorage.getItem('akie_best_score') || '0');
+            document.getElementById('best-score-text').innerText = best;
+            document.getElementById('best-shogo-text').innerText = getShogo(best).text;
+        };
 
         function showHowTo() { document.getElementById('how-to-play-screen').style.display = 'flex'; }
         function hideHowTo() { document.getElementById('how-to-play-screen').style.display = 'none'; }
@@ -165,19 +149,19 @@
             if (isGameRunning) return;
             isGameRunning = true;
             document.getElementById('title-screen').style.display = 'none';
-            document.getElementById('bg-danger').classList.remove('danger-active');
 
+            // オーディオ・描画のアンロック
             try {
                 const ctx = new (window.AudioContext || window.webkitAudioContext)();
                 if (ctx.state === 'suspended') await ctx.resume();
                 sounds.bgm.currentTime = 0;
-                sounds.bgm.play().catch(() => {});
-            } catch (e) {}
+                sounds.bgm.play().catch(()=>{});
+            } catch(e){}
 
             score = 0; hp = 3; combo = 0; playerLine = 2; 
             baseFallSpeed = 1.3; autoHealCounter = 0; umewariLotteryCounter = 0; currentSpawnRate = 1400;
             updateUI();
-            updatePlayerPos(false);
+            updatePlayerPos(2); // 中心にセット
             
             bgInterval = setInterval(switchBackground, 30000);
             spawnInterval = setInterval(spawnMotsu, currentSpawnRate);
@@ -194,10 +178,7 @@
 
         function increaseDifficulty() {
             if (!isGameRunning) return;
-            let newRate = 1400;
-            if (score >= 10000) newRate = 500;
-            else if (score >= 5000) newRate = 700;
-            else if (score >= 3000) newRate = 1000;
+            let newRate = score >= 10000 ? 500 : (score >= 5000 ? 700 : (score >= 3000 ? 1000 : 1400));
             if (newRate !== currentSpawnRate) {
                 currentSpawnRate = newRate;
                 clearInterval(spawnInterval);
@@ -218,18 +199,9 @@
                 data = { img: './images/umewari.png', type: 'item' }; 
                 motsu.classList.add('item-umewari');
             } else {
-                if (Math.random() < 0.3) {
-                    data = motsuDanger[Math.floor(Math.random() * motsuDanger.length)];
-                } else {
-                    data = motsuScore[Math.floor(Math.random() * motsuScore.length)];
-                }
-                // シャアモツ（高速）判定
+                data = (Math.random() < 0.3) ? motsuDanger[Math.floor(Math.random() * motsuDanger.length)] : motsuScore[Math.floor(Math.random() * motsuScore.length)];
                 let charProb = 0.05 + Math.min(score / 15000, 0.75);
-                if (Math.random() < charProb) {
-                    speed *= 3.0;
-                    isChar = true;
-                    motsu.classList.add('char-mode');
-                }
+                if (Math.random() < charProb) { speed *= 3.0; isChar = true; motsu.classList.add('char-mode'); }
             }
 
             motsu.className = 'motsu'; 
@@ -238,12 +210,11 @@
             motsu.style.top = '-70px'; 
             document.getElementById('game-screen').appendChild(motsu);
             
-            baseFallSpeed += 0.005;
+            baseFallSpeed += 0.003;
             let top = -70;
             function fall() {
                 if (!isGameRunning) { motsu.remove(); return; }
-                top += speed; 
-                motsu.style.top = top + 'px';
+                top += speed; motsu.style.top = top + 'px';
                 if (top > 380 && top < 450 && line === playerLine) { handleColl(data, isChar); motsu.remove(); return; }
                 if (top > 500) { motsu.remove(); return; }
                 requestAnimationFrame(fall);
@@ -260,9 +231,7 @@
             } else if (d.type === 'item') {
                 if (hp < 3) { hp++; sounds.heal.play(); } else { score += 200; sounds.get.play(); }
             } else {
-                // 通常10点、高速なら50点
-                let pts = isChar ? 50 : 10;
-                combo++; score += pts; autoHealCounter++; umewariLotteryCounter++;
+                combo++; score += (isChar ? 50 : 10); autoHealCounter++; umewariLotteryCounter++;
                 sounds.get.currentTime = 0; sounds.get.play();
                 if (autoHealCounter >= 10) { 
                     autoHealCounter = 0; 
@@ -280,18 +249,10 @@
             const best = parseInt(localStorage.getItem('akie_best_score') || '0');
             if (score > best) localStorage.setItem('akie_best_score', score);
             setTimeout(() => {
-                document.getElementById('title-screen').style.display = 'flex';
                 document.getElementById('title-content').style.display = 'none';
                 document.getElementById('result-area').style.display = 'block';
-                const shogo = getShogo(score);
-                document.getElementById('result-area').innerHTML = `
-                    <div class="denpyo">
-                        <h2>御計算書</h2>
-                        <div style="display:flex;justify-content:space-between"><span>モツ代</span><span>込</span></div>
-                        <div style="display:flex;justify-content:space-between"><span>梅割り代</span><span>込</span></div>
-                        <div class="total-row"><span>合計</span><span>${score} 点</span></div>
-                        <div class="shogo-stamp ${shogo.class}">${shogo.text}</div>
-                    </div>`;
+                document.getElementById('result-area').innerHTML = `<div class="denpyo"><h2>御計算書</h2><div style="display:flex;justify-content:space-between"><span>モツ代</span><span>込</span></div><div style="display:flex;justify-content:space-between"><span>梅割り代</span><span>込</span></div><div class="total-row"><span>合計</span><span>${score} 点</span></div><div class="shogo-stamp">${getShogo(score).text}</div></div>`;
+                document.getElementById('title-screen').style.display = 'flex';
                 document.getElementById('return-btn-id').style.display = 'block';
             }, 800);
         }
@@ -309,16 +270,16 @@
             }
         }
 
-        function updatePlayerPos(s = true) {
-            document.getElementById('player').style.left = (playerLine * lineWidth + (lineWidth - 70)/2) + 'px';
-            if (s) {
-                sounds.move.currentTime = 0;
-                sounds.move.play();
-            }
+        function updatePlayerPos(dir) {
+            const p = document.getElementById('player');
+            p.style.left = (playerLine * lineWidth + (lineWidth - 70)/2) + 'px';
+            // dir: -1(左), 1(右), 2(初期)
+            if (dir === -1) p.style.backgroundImage = "url('./images/player1.png')";
+            if (dir === 1) p.style.backgroundImage = "url('./images/player2.png')";
         }
 
-        window.moveLeft = () => { if(playerLine > 0 && isGameRunning) { playerLine--; updatePlayerPos(); } };
-        window.moveRight = () => { if(playerLine < totalLines - 1 && isGameRunning) { playerLine++; updatePlayerPos(); } };
+        window.moveLeft = () => { if(playerLine > 0 && isGameRunning) { playerLine--; updatePlayerPos(-1); sounds.move.currentTime=0; sounds.move.play(); } };
+        window.moveRight = () => { if(playerLine < totalLines - 1 && isGameRunning) { playerLine++; updatePlayerPos(1); sounds.move.currentTime=0; sounds.move.play(); } };
     </script>
 </body>
 </html>
