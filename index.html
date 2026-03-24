@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>アキエクライシス - Final Tuning</title>
+    <title>アキエクライシス - Stable</title>
     <style>
         html, body { overflow: hidden; width: 100%; height: 100%; position: fixed; }
         body { background: #1a0000; margin: 0; padding: 0; display: flex; flex-direction: column; align-items: center; touch-action: none; font-family: sans-serif; -webkit-user-select: none; user-select: none; }
@@ -11,11 +11,11 @@
         
         .bg-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-size: cover; background-position: center; opacity: 0; transition: opacity 1.5s; z-index: 1; pointer-events: none;}
         .bg-active { opacity: 1; }
-        #bg-danger { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-image: url('./images/background_danger.png'); background-size: cover; background-position: center; opacity: 0; z-index: 2; pointer-events: none; }
+        #bg-danger { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-image: url('./images/background_danger.png'); background-size: cover; background-position: center; opacity: 0; transition: opacity 0.5s; z-index: 2; pointer-events: none; }
         .danger-active { opacity: 1 !important; }
 
         #damage-flash { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: red; opacity: 0; pointer-events: none; z-index: 50; }
-        #player { position: absolute; bottom: 10px; width: 70px; height: 70px; background-image: url('./images/player1.png'); background-size: contain; background-repeat: no-repeat; background-position: center; z-index: 10; will-change: left; transition: transform 0.1s; }
+        #player { position: absolute; bottom: 10px; width: 70px; height: 70px; background-image: url('./images/player1.png'); background-size: contain; background-repeat: no-repeat; background-position: center; z-index: 10; will-change: left; }
         
         .motsu { position: absolute; width: 60px; height: 60px; background-size: contain; background-repeat: no-repeat; background-position: center; z-index: 5; animation: puripuri 1s infinite; }
         .char-mode { filter: drop-shadow(0 0 15px #ff0000) brightness(1.3) contrast(1.2); z-index: 8 !important; }
@@ -36,7 +36,6 @@
 
         .denpyo { background: #fdfdf5; color: #333; padding: 15px; width: 240px; box-shadow: 5px 5px 15px rgba(0,0,0,0.5); font-family: monospace; border-top: 4px dotted #ccc; border-bottom: 4px dotted #ccc; margin-bottom: 15px; transform: rotate(1deg); }
         .total-row { font-size: 22px; font-weight: bold; border-top: 2px solid #333; margin-top: 10px; padding-top: 5px; display: flex; justify-content: space-between; }
-        .shogo-stamp { color: rgba(200, 0, 0, 0.7); border: 3px double rgba(200, 0, 0, 0.7); padding: 5px; transform: rotate(-12deg); font-weight: bold; margin-top: 15px; text-align: center; font-size: 20px; }
         
         .action-btn { padding: 12px 20px; font-size: 24px; color: white; border: none; border-radius: 10px; cursor: pointer; font-weight: bold; background: #aa0000; border-bottom: 5px solid #660000; width: 220px; margin-top: 10px; outline: none; }
         .secondary-btn { background: #444; border-bottom: 5px solid #222; font-size: 18px; }
@@ -88,9 +87,6 @@
                     <div class="icon-unit"><div class="icon-box" style="background-image:url('./images/nankotsu.png')"></div>ナンコツ</div>
                 </div>
                 <b>【梅割り】</b> 呑むと体力1回復！
-                <div class="motsu-icons">
-                    <div class="icon-unit"><div class="icon-box" style="background-image:url('./images/umewari.png')"></div>梅割り</div>
-                </div>
             </div>
             <button class="action-btn" style="width:150px;" onpointerdown="hideHowTo()">了解</button>
         </div>
@@ -120,7 +116,7 @@
         };
         sounds.bgm.loop = true; sounds.siren.loop = true;
 
-        let score = 0, hp = 3, combo = 0, playerLine = 2, isGameRunning = false;
+        let score, hp, combo, playerLine, isGameRunning = false;
         let spawnInterval, bgInterval, charInterval;
         let lastLine = -1, baseFallSpeed = 1.3, autoHealCounter = 0, umewariLotteryCounter = 0;
         let lastBgIdx = 0, currentSpawnRate = 1400;
@@ -129,43 +125,41 @@
         const motsuDanger = [{img:'./images/gatsu.png',type:'damage'},{img:'./images/nankotsu.png',type:'damage'}];
 
         function getShogo(s) {
-            if (s >= 10000) return { text: "レジェンド", class: "shogo-legend" };
-            if (s >= 3001) return { text: "常連さん", class: "" };
-            if (s >= 1000) return { text: "お客さん", class: "" };
-            if (s >= 500) return { text: "御新規さん", class: "" };
-            return { text: "いちげんさん", class: "" };
+            if (s >= 10000) return "レジェンド";
+            if (s >= 3001) return "常連さん";
+            if (s >= 1000) return "お客さん";
+            if (s >= 500) return "御新規さん";
+            return "いちげんさん";
         }
 
         window.onload = () => {
             const best = parseInt(localStorage.getItem('akie_best_score') || '0');
             document.getElementById('best-score-text').innerText = best;
-            document.getElementById('best-shogo-text').innerText = getShogo(best).text;
+            document.getElementById('best-shogo-text').innerText = getShogo(best);
         };
 
         function showHowTo() { document.getElementById('how-to-play-screen').style.display = 'flex'; }
         function hideHowTo() { document.getElementById('how-to-play-screen').style.display = 'none'; }
 
-        async function startGame() {
+        function startGame() {
             if (isGameRunning) return;
             isGameRunning = true;
             document.getElementById('title-screen').style.display = 'none';
 
-            // オーディオ・描画のアンロック
-            try {
-                const ctx = new (window.AudioContext || window.webkitAudioContext)();
-                if (ctx.state === 'suspended') await ctx.resume();
-                sounds.bgm.currentTime = 0;
-                sounds.bgm.play().catch(()=>{});
-            } catch(e){}
+            // 音声再生の開始
+            sounds.bgm.currentTime = 0;
+            sounds.bgm.play().catch(()=>{});
 
+            // 初期化
             score = 0; hp = 3; combo = 0; playerLine = 2; 
             baseFallSpeed = 1.3; autoHealCounter = 0; umewariLotteryCounter = 0; currentSpawnRate = 1400;
             updateUI();
-            updatePlayerPos(2); // 中心にセット
+            updatePlayerPos(2);
             
-            bgInterval = setInterval(switchBackground, 30000);
-            spawnInterval = setInterval(spawnMotsu, currentSpawnRate);
-            charInterval = setInterval(increaseDifficulty, 1000);
+            // ループ開始
+            clearInterval(bgInterval); bgInterval = setInterval(switchBackground, 30000);
+            clearInterval(spawnInterval); spawnInterval = setInterval(spawnMotsu, currentSpawnRate);
+            clearInterval(charInterval); charInterval = setInterval(increaseDifficulty, 1000);
         }
 
         function switchBackground() {
@@ -251,7 +245,7 @@
             setTimeout(() => {
                 document.getElementById('title-content').style.display = 'none';
                 document.getElementById('result-area').style.display = 'block';
-                document.getElementById('result-area').innerHTML = `<div class="denpyo"><h2>御計算書</h2><div style="display:flex;justify-content:space-between"><span>モツ代</span><span>込</span></div><div style="display:flex;justify-content:space-between"><span>梅割り代</span><span>込</span></div><div class="total-row"><span>合計</span><span>${score} 点</span></div><div class="shogo-stamp">${getShogo(score).text}</div></div>`;
+                document.getElementById('result-area').innerHTML = `<div class="denpyo"><h2>御計算書</h2><div style="display:flex;justify-content:space-between"><span>モツ代</span><span>込</span></div><div style="display:flex;justify-content:space-between"><span>梅割り代</span><span>込</span></div><div class="total-row"><span>合計</span><span>${score} 点</span></div><div style="text-align:center;font-weight:bold;font-size:20px;margin-top:10px;">${getShogo(score)}</div></div>`;
                 document.getElementById('title-screen').style.display = 'flex';
                 document.getElementById('return-btn-id').style.display = 'block';
             }, 800);
@@ -273,7 +267,6 @@
         function updatePlayerPos(dir) {
             const p = document.getElementById('player');
             p.style.left = (playerLine * lineWidth + (lineWidth - 70)/2) + 'px';
-            // dir: -1(左), 1(右), 2(初期)
             if (dir === -1) p.style.backgroundImage = "url('./images/player1.png')";
             if (dir === 1) p.style.backgroundImage = "url('./images/player2.png')";
         }
