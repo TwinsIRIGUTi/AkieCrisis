@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>アキエクライシス - Multi-Play Fixed</title>
+    <title>アキエクライシス - Risk & Reward</title>
     <style>
         html, body { overflow: hidden; width: 100%; height: 100%; position: fixed; }
         body { background: #1a0000; margin: 0; padding: 0; display: flex; flex-direction: column; align-items: center; touch-action: none; font-family: sans-serif; -webkit-user-select: none; user-select: none; }
@@ -17,7 +17,8 @@
         #damage-flash { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: red; opacity: 0; pointer-events: none; z-index: 50; }
         #player { position: absolute; bottom: 10px; width: 70px; height: 70px; background-image: url('./images/player1.png'); background-size: contain; background-repeat: no-repeat; background-position: center; z-index: 10; will-change: left; }
         
-        .motsu { position: absolute; width: 60px; height: 60px; background-size: contain; background-repeat: no-repeat; background-position: center; z-index: 5; animation: puripuri 1s infinite; will-change: top; }
+        .motsu { position: absolute; width: 60px; height: 60px; background-size: contain; background-repeat: no-repeat; background-position: center; z-index: 5; animation: puripuri 1s infinite; }
+        .char-mode { filter: drop-shadow(0 0 15px #ff0000) brightness(1.3) contrast(1.2); z-index: 8 !important; }
         .item-umewari { filter: drop-shadow(0 0 12px #ff00ff); z-index: 6 !important; }
 
         @keyframes puripuri { 0%, 49% { transform: scaleX(1); } 50%, 100% { transform: scaleX(-1); } }
@@ -25,16 +26,15 @@
         .shivering { animation: shiver 0.1s infinite !important; }
 
         .overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.92); color: white; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 100; padding: 20px; box-sizing: border-box; }
-        .crisis-title { font-size: 38px; font-weight: 900; color: #fff; text-shadow: 0 0 10px #ff0000, 3px 3px 0 #880000; margin-bottom: 10px; font-style: italic; }
+        .crisis-title { font-size: 38px; font-weight: 900; color: #fff; text-shadow: 0 0 10px #ff0000, 3px 3px 0 #880000; margin-bottom: 5px; font-style: italic; }
         
-        #best-info-container { margin-bottom: 20px; padding: 10px 20px; background: rgba(255,255,255,0.1); border-radius: 15px; border: 1px solid #555; text-align: center; }
+        #best-info-container { margin-bottom: 15px; padding: 10px 20px; background: rgba(255,255,255,0.1); border-radius: 15px; border: 1px solid #555; text-align: center; }
         #best-shogo-text { font-weight: bold; font-size: 18px; display: block; margin-top: 5px; }
 
-        /* 遊び方画面の改修 */
-        .info-list { text-align: left; font-size: 13px; line-height: 1.4; background: rgba(255,255,255,0.1); padding: 12px; border-radius: 10px; width: 100%; margin-bottom: 10px; }
-        .info-list b { color: #ffcc00; }
-        .motsu-icons { display: flex; flex-wrap: wrap; gap: 4px; margin: 4px 0 8px 0; align-items: center; }
-        .icon-box { width: 35px; height: 35px; background-size: contain; background-repeat: no-repeat; border: 1px solid #555; border-radius: 4px; background-color: rgba(0,0,0,0.3); }
+        .info-list { text-align: left; font-size: 12px; line-height: 1.3; background: rgba(255,255,255,0.1); padding: 10px; border-radius: 10px; width: 100%; margin-bottom: 10px; }
+        .motsu-icons { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 10px 0; justify-content: center; }
+        .icon-unit { display: flex; flex-direction: column; align-items: center; font-size: 9px; width: 42px; }
+        .icon-box { width: 38px; height: 38px; background-size: contain; background-repeat: no-repeat; border: 1px solid #444; border-radius: 4px; background-color: rgba(0,0,0,0.4); margin-bottom: 2px; }
 
         .denpyo { background: #fdfdf5; color: #333; padding: 15px; width: 240px; box-shadow: 5px 5px 15px rgba(0,0,0,0.5); font-family: monospace; border-top: 4px dotted #ccc; border-bottom: 4px dotted #ccc; margin-bottom: 15px; transform: rotate(1deg); }
         .total-row { font-size: 22px; font-weight: bold; border-top: 2px solid #333; margin-top: 10px; padding-top: 5px; display: flex; justify-content: space-between; }
@@ -70,29 +70,30 @@
                 <button class="action-btn secondary-btn" onpointerdown="showHowTo()">遊び方</button>
             </div>
             <div id="result-area" style="display:none;"></div>
-            <button id="return-btn-id" class="action-btn" style="display:none;" onpointerdown="resetMenu()">ごちそうさま</button>
+            <button id="return-btn-id" class="action-btn" style="display:none;" onpointerdown="location.reload()">ごちそうさま</button>
         </div>
 
         <div id="how-to-play-screen" class="overlay" style="display:none;">
             <h2 style="color: #ffcc00; margin-top: 0;">宴の心得</h2>
             <div class="info-list">
-                <b>【得点モツ】</b> 食べると+10点。10個で回復。
+                <b>【得点モツ】</b> 通常10点 / <b>高速50点</b>
                 <div class="motsu-icons">
-                    <div class="icon-box" style="background-image:url('./images/shiro.png')"></div>
-                    <div class="icon-box" style="background-image:url('./images/hatsu.png')"></div>
-                    <div class="icon-box" style="background-image:url('./images/lever.png')"></div>
-                    <div class="icon-box" style="background-image:url('./images/abura.png')"></div>
-                    <div class="icon-box" style="background-image:url('./images/kasira.png')"></div>
+                    <div class="icon-unit"><div class="icon-box" style="background-image:url('./images/shiro.png')"></div>シロ</div>
+                    <div class="icon-unit"><div class="icon-box" style="background-image:url('./images/hatsu.png')"></div>ハツ</div>
+                    <div class="icon-unit"><div class="icon-box" style="background-image:url('./images/lever.png')"></div>レバー</div>
+                    <div class="icon-unit"><div class="icon-box" style="background-image:url('./images/abura.png')"></div>アブラ</div>
+                    <div class="icon-unit"><div class="icon-box" style="background-image:url('./images/kasira.png')"></div>カシラ</div>
                 </div>
-                <b>【苦手なモツ】</b> 当たるとダメージ！
+                <b>【苦手なモツ】</b> 当たるとダメージ(体力-1)
                 <div class="motsu-icons">
-                    <div class="icon-box" style="background-image:url('./images/gatsu.png')"></div>
-                    <div class="icon-box" style="background-image:url('./images/nankotsu.png')"></div>
+                    <div class="icon-unit"><div class="icon-box" style="background-image:url('./images/gatsu.png')"></div>ガツ</div>
+                    <div class="icon-unit"><div class="icon-box" style="background-image:url('./images/nankotsu.png')"></div>ナンコツ</div>
                 </div>
-                <b>【梅割り】</b> 14個で抽選。飲むと全快！
+                <b>【梅割り】</b> 呑むと体力1回復！
                 <div class="motsu-icons">
-                    <div class="icon-box" style="background-image:url('./images/umewari.png')"></div>
+                    <div class="icon-unit"><div class="icon-box" style="background-image:url('./images/umewari.png')"></div>梅割り</div>
                 </div>
+                <p style="font-size:10px; color:#ffaaaa; text-align:center;">高速（赤い光）で降るモツは高得点のチャンス！</p>
             </div>
             <button class="action-btn" style="width:150px;" onpointerdown="hideHowTo()">了解</button>
         </div>
@@ -128,12 +129,15 @@
         let lastBgIdx = 0, currentSpawnRate = 1400;
 
         const motsuScore = [
-            { img: './images/shiro.png', type: 'score' }, { img: './images/hatsu.png', type: 'score' },
-            { img: './images/lever.png', type: 'score' }, { img: './images/abura.png', type: 'score' },
+            { img: './images/shiro.png', type: 'score' },
+            { img: './images/hatsu.png', type: 'score' },
+            { img: './images/lever.png', type: 'score' },
+            { img: './images/abura.png', type: 'score' },
             { img: './images/kasira.png', type: 'score' }
         ];
         const motsuDanger = [
-            { img: './images/gatsu.png', type: 'damage' }, { img: './images/nankotsu.png', type: 'damage' }
+            { img: './images/gatsu.png', type: 'damage' },
+            { img: './images/nankotsu.png', type: 'damage' }
         ];
 
         function getShogo(s) {
@@ -158,14 +162,7 @@
         function hideHowTo() { document.getElementById('how-to-play-screen').style.display = 'none'; }
 
         async function startGame() {
-            // 2回目以降のための徹底リセット
-            isGameRunning = false;
-            clearInterval(spawnInterval);
-            clearInterval(bgInterval);
-            clearInterval(charInterval);
-            document.querySelectorAll('.motsu').forEach(m => m.remove());
-
-            // 開始処理
+            if (isGameRunning) return;
             isGameRunning = true;
             document.getElementById('title-screen').style.display = 'none';
             document.getElementById('bg-danger').classList.remove('danger-active');
@@ -173,17 +170,15 @@
             try {
                 const ctx = new (window.AudioContext || window.webkitAudioContext)();
                 if (ctx.state === 'suspended') await ctx.resume();
-                sounds.bgm.currentTime = 0; // 曲を最初から
+                sounds.bgm.currentTime = 0;
                 sounds.bgm.play().catch(() => {});
             } catch (e) {}
 
             score = 0; hp = 3; combo = 0; playerLine = 2; 
             baseFallSpeed = 1.3; autoHealCounter = 0; umewariLotteryCounter = 0; currentSpawnRate = 1400;
-            
             updateUI();
             updatePlayerPos(false);
             
-            // 各種ループ開始
             bgInterval = setInterval(switchBackground, 30000);
             spawnInterval = setInterval(spawnMotsu, currentSpawnRate);
             charInterval = setInterval(increaseDifficulty, 1000);
@@ -203,7 +198,6 @@
             if (score >= 10000) newRate = 500;
             else if (score >= 5000) newRate = 700;
             else if (score >= 3000) newRate = 1000;
-            
             if (newRate !== currentSpawnRate) {
                 currentSpawnRate = newRate;
                 clearInterval(spawnInterval);
@@ -217,14 +211,25 @@
             lastLine = line;
             
             const motsu = document.createElement('div');
-            let data, speed = baseFallSpeed;
+            let data, speed = baseFallSpeed, isChar = false;
             
             if (umewariLotteryCounter >= 14 && Math.random() < 0.25) {
-                umewariLotteryCounter = 0; data = { img: './images/umewari.png', type: 'item' }; motsu.classList.add('item-umewari');
-            } else if (Math.random() < 0.3) {
-                data = motsuDanger[Math.floor(Math.random() * motsuDanger.length)];
+                umewariLotteryCounter = 0; 
+                data = { img: './images/umewari.png', type: 'item' }; 
+                motsu.classList.add('item-umewari');
             } else {
-                data = motsuScore[Math.floor(Math.random() * motsuScore.length)];
+                if (Math.random() < 0.3) {
+                    data = motsuDanger[Math.floor(Math.random() * motsuDanger.length)];
+                } else {
+                    data = motsuScore[Math.floor(Math.random() * motsuScore.length)];
+                }
+                // シャアモツ（高速）判定
+                let charProb = 0.05 + Math.min(score / 15000, 0.75);
+                if (Math.random() < charProb) {
+                    speed *= 3.0;
+                    isChar = true;
+                    motsu.classList.add('char-mode');
+                }
             }
 
             motsu.className = 'motsu'; 
@@ -237,24 +242,27 @@
             let top = -70;
             function fall() {
                 if (!isGameRunning) { motsu.remove(); return; }
-                top += speed; motsu.style.top = top + 'px';
-                if (top > 380 && top < 450 && line === playerLine) { handleColl(data); motsu.remove(); return; }
+                top += speed; 
+                motsu.style.top = top + 'px';
+                if (top > 380 && top < 450 && line === playerLine) { handleColl(data, isChar); motsu.remove(); return; }
                 if (top > 500) { motsu.remove(); return; }
                 requestAnimationFrame(fall);
             }
             requestAnimationFrame(fall);
         }
 
-        function handleColl(d) {
+        function handleColl(d, isChar) {
             if (d.type === 'damage') {
                 hp--; combo = 0; sounds.damage.play();
                 document.getElementById('damage-flash').style.opacity = "0.7"; 
                 setTimeout(() => document.getElementById('damage-flash').style.opacity = "0", 150);
                 if (hp <= 0) gameOver();
             } else if (d.type === 'item') {
-                hp = 3; sounds.heal.play();
+                if (hp < 3) { hp++; sounds.heal.play(); } else { score += 200; sounds.get.play(); }
             } else {
-                combo++; score += 10; autoHealCounter++; umewariLotteryCounter++;
+                // 通常10点、高速なら50点
+                let pts = isChar ? 50 : 10;
+                combo++; score += pts; autoHealCounter++; umewariLotteryCounter++;
                 sounds.get.currentTime = 0; sounds.get.play();
                 if (autoHealCounter >= 10) { 
                     autoHealCounter = 0; 
@@ -266,17 +274,11 @@
 
         function gameOver() {
             isGameRunning = false;
-            clearInterval(spawnInterval); 
-            clearInterval(bgInterval); 
-            clearInterval(charInterval);
-            sounds.bgm.pause(); 
-            sounds.siren.pause(); 
-            sounds.damage.play();
+            clearInterval(spawnInterval); clearInterval(bgInterval); clearInterval(charInterval);
+            sounds.bgm.pause(); sounds.siren.pause(); sounds.damage.play();
             document.getElementById('player').classList.add('shivering');
-            
             const best = parseInt(localStorage.getItem('akie_best_score') || '0');
             if (score > best) localStorage.setItem('akie_best_score', score);
-
             setTimeout(() => {
                 document.getElementById('title-screen').style.display = 'flex';
                 document.getElementById('title-content').style.display = 'none';
@@ -292,17 +294,6 @@
                     </div>`;
                 document.getElementById('return-btn-id').style.display = 'block';
             }, 800);
-        }
-
-        function resetMenu() {
-            updateBestDisplay();
-            document.getElementById('result-area').style.display = 'none';
-            document.getElementById('return-btn-id').style.display = 'none';
-            document.getElementById('title-content').style.display = 'block';
-            document.getElementById('player').classList.remove('shivering');
-            document.getElementById('score-board').innerText = "0点";
-            document.getElementById('hp-display').innerText = "体力: ❤️❤️❤️";
-            document.getElementById('combo-display').innerText = "コンボ: 0";
         }
 
         function updateUI() {
